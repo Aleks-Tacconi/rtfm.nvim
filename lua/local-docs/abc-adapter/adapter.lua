@@ -20,6 +20,12 @@ local M = {
 	abstract = true,
 }
 
+M.SCOPES = {
+	{ spec_key = "builtins", method = "config_builtins", dir = "builtin" },
+	{ spec_key = "stdlib", method = "config_stdlib", dir = "stdlib" },
+	{ spec_key = "misc", method = "config_misc", dir = "misc" },
+}
+
 --- Constructs a new adapter instance
 --- @param doc string: The language / framework the documentation being pulled from is for, used for display purposes
 function M:new(doc)
@@ -64,6 +70,28 @@ function M:config_misc(crawler_spec)
 	self:_run_scope("misc", crawler_spec)
 end
 
+--- Instantiates an adapter module returned by require().
+--- @param adapter_module table
+--- @return table|nil adapter
+--- @return string|nil err
+function M.instantiate(adapter_module)
+	if type(adapter_module) ~= "table" then
+		return nil, "Adapter module must return a table"
+	end
+
+	if type(adapter_module.new) == "function" then
+		local ok, instance_or_err = pcall(function()
+			return adapter_module:new()
+		end)
+		if not ok then
+			return nil, string.format("Adapter constructor failed: %s", instance_or_err)
+		end
+		return instance_or_err, nil
+	end
+
+	return adapter_module, nil
+end
+
 --- @class AdapterSpec
 --- @field doc string
 --- @field builtins table|nil
@@ -87,13 +115,7 @@ function M.define(spec)
 		return M.new(self, self.doc)
 	end
 
-	local scopes = {
-		{ spec_key = "builtins", method = "config_builtins", dir = "builtin" },
-		{ spec_key = "stdlib", method = "config_stdlib", dir = "stdlib" },
-		{ spec_key = "misc", method = "config_misc", dir = "misc" },
-	}
-
-	for _, scope in ipairs(scopes) do
+	for _, scope in ipairs(M.SCOPES) do
 		if spec[scope.spec_key] then
 			adapter[scope.method] = function(self)
 				self:_run_scope(scope.dir, self.spec[scope.spec_key])

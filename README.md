@@ -10,12 +10,6 @@ require("local-docs").setup({
 })
 ```
 
-`setup` also accepts a list directly:
-
-```lua
-require("local-docs").setup({ "python" })
-```
-
 ## User Commands
 
 - `:LocalDocsInstall <adapter>`

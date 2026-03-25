@@ -1,8 +1,6 @@
 local M = {}
 
---- A set of HTML tags that are considered void elements,
---- meaning they do not have a closing tag and cannot contain content
-M.VOID_TAGS = {
+local VOID_TAGS = {
 	area = true,
 	base = true,
 	br = true,
@@ -19,11 +17,6 @@ M.VOID_TAGS = {
 	wbr = true,
 }
 
---- Finds the index of the closing '>' for an opening tag in the given html string,
---- starting from the specified index of the opening '<'.
---- @param html string: The HTML string to search through
---- @param open_start integer: The index of the opening '<' of the tag to find the closing '>' for
---- @return integer|nil: The index of the closing '>' character, or nil if not found
 function M.find_tag_end(html, open_start)
 	local i = open_start + 1
 	local quote = nil
@@ -46,11 +39,6 @@ function M.find_tag_end(html, open_start)
 	return nil
 end
 
---- Parses an opening tag from the given html string starting at the specified index,
---- and returns a table containing the tag's name, position, and other relevant information.
---- @param html string: The HTML string to parse
---- @open_start integer: The index of the opening '<' of the tag to parse
---- @return table|nil: A table containing the tag's name, position, and other relevant information,
 function M.parse_opening_tag(html, open_start)
 	local open_end = M.find_tag_end(html, open_start)
 	if not open_end then
@@ -81,10 +69,6 @@ function M.parse_opening_tag(html, open_start)
 	}
 end
 
---- Extracts the value of a specified attribute from an opening tag fragment.
---- @param opening_fragment string: The string containing the opening tag fragment to extract the attribute value from
---- @param attr string: The name of the attribute to extract the value for
---- @return string|nil: The value of the specified attribute, or nil if the attribute is not found
 function M.extract_attr_value(opening_fragment, attr)
 	local value = opening_fragment:match(attr .. '%s*=%s*"([^"]*)"')
 	if value then
@@ -99,13 +83,6 @@ function M.extract_attr_value(opening_fragment, attr)
 	return opening_fragment:match(attr .. "%s*=%s*([^%s\"'`=<>]+)")
 end
 
---- Finds the matching closing tag for a given opening tag in the html string, starting from a specified position.
---- @param html string: The HTML string to search through
---- @param tag_name string: The name of the tag to find the matching closing tag for
---- @param from_pos integer: The index to start searching for the matching closing tag from,
----                          typically just after the opening tag
---- @return integer|nil, integer|nil: The indices of the opening '<' and closing '>' of the
----                               matching closing tag, or nil if not found
 function M.find_matching_close(html, tag_name, from_pos)
 	local target = tag_name:lower()
 	local depth = 1
@@ -133,7 +110,7 @@ function M.find_matching_close(html, tag_name, from_pos)
 			end
 		else
 			local nested = M.parse_opening_tag(html, open_start)
-			if nested and nested.name_lower == target and not nested.self_closing and not M.VOID_TAGS[target] then
+			if nested and nested.name_lower == target and not nested.self_closing and not VOID_TAGS[target] then
 				depth = depth + 1
 			end
 		end
@@ -144,12 +121,6 @@ function M.find_matching_close(html, tag_name, from_pos)
 	return nil
 end
 
---- Collects elements from the given html string that satisfy the provided predicate function,
---- and returns them as an array of strings. The predicate function is called with a table containing
---- information about each opening tag node, and should return true for nodes that should be collected.
---- @param html string: The HTML string to collect elements from
---- @param predicate function: A function that takes a table containing information about an opening tag node,
---- @return string[]: An array of strings representing the collected elements that satisfy the predicate function
 function M.collect_elements(html, predicate)
 	local results = {}
 	local pos = 1
@@ -165,7 +136,7 @@ function M.collect_elements(html, predicate)
 			pos = open_start + 1
 		else
 			if predicate(node) then
-				if node.self_closing or M.VOID_TAGS[node.name_lower] then
+				if node.self_closing or VOID_TAGS[node.name_lower] then
 					table.insert(results, node.opening_fragment)
 					pos = node.open_end + 1
 				else

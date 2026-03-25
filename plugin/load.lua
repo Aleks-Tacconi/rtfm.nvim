@@ -1,1 +1,3 @@
--- require("local-docs").setup({ "go" })
+require("local-docs").setup({
+	ensure_installed = { "python" },
+})

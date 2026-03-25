@@ -14,10 +14,6 @@ local function normalize_ensure_installed(opts)
 		return M.ensure_installed
 	end
 
-	if vim.islist(opts) then
-		return opts
-	end
-
 	if vim.islist(opts.ensure_installed) then
 		return opts.ensure_installed
 	end

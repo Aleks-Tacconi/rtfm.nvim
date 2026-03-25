@@ -1,7 +1,20 @@
 --- Crawler configurtaion for usage with the abstract base adapter.
 
-local rule_utils = require("local-docs.abc-adapter.rule.utils")
 local utils = require("local-docs.utils")
+
+local function apply_rule_chain(html, rules)
+	local results = { html }
+
+	for _, rule in ipairs(rules) do
+		local next_results = {}
+		for _, fragment in ipairs(results) do
+			vim.list_extend(next_results, rule:apply(fragment))
+		end
+		results = next_results
+	end
+
+	return results
+end
 
 local function source_key(source)
 	local key = source:gsub("^https?://", "")
@@ -128,12 +141,12 @@ function M:fetch()
 		return
 	end
 
-	local html = utils.curl(self.url, "")
+	local html = utils.curl(self.url)
 	if not html then
 		return
 	end
 
-	local output = rule_utils.apply_rule_chain(html, self.source_rules)
+	local output = apply_rule_chain(html, self.source_rules)
 
 	for _, source in ipairs(output) do
 		self:add_source(source)
@@ -146,14 +159,14 @@ end
 --- @param source string: The URL of the documentation source to fetch
 --- @param output_path string: The directory path to store the fetched documentation sections in
 function M:fetch_documentation(source, output_path)
-	local html = utils.curl(source, "")
+	local html = utils.curl(source)
 	if not html then
 		return
 	end
 
 	local sections = { html }
 	if #self.documentation_rules > 0 then
-		sections = rule_utils.apply_rule_chain(html, self.documentation_rules)
+		sections = apply_rule_chain(html, self.documentation_rules)
 	end
 
 	for index, section in ipairs(sections) do

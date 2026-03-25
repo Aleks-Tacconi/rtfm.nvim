@@ -1,18 +1,6 @@
 local CrawlerConfig = require("local-docs.abc-adapter.crawler-config")
 local utils = require("local-docs.utils")
 
-local function ensure_crawler(crawler_or_spec)
-	if type(crawler_or_spec) == "table" and type(crawler_or_spec.fetch_all_documentation) == "function" then
-		return crawler_or_spec
-	end
-
-	if type(crawler_or_spec) ~= "table" then
-		error("Adapter: expected CrawlerConfig instance or crawler spec table")
-	end
-
-	return CrawlerConfig:new(crawler_or_spec)
-end
-
 local function validate_adapter_spec(spec)
 	if type(spec) ~= "table" then
 		error("Adapter.define: spec must be a table")
@@ -42,13 +30,16 @@ end
 
 --- Runs crawler extraction for a given output scope directory.
 --- @param scope_dir string
---- @param crawler_or_spec CrawlerConfig|table
-function M:_run_scope(scope_dir, crawler_or_spec)
+--- @param crawler_spec table
+function M:_run_scope(scope_dir, crawler_spec)
 	if type(self.doc) ~= "string" or self.doc == "" then
 		error("Adapter: missing doc identifier")
 	end
+	if type(crawler_spec) ~= "table" then
+		error("Adapter: expected crawler spec table")
+	end
 
-	local crawler = ensure_crawler(crawler_or_spec)
+	local crawler = CrawlerConfig:new(crawler_spec)
 
 	crawler:fetch()
 
@@ -58,19 +49,19 @@ end
 
 --- Defines an adapter for pulling builtin functions from official language
 --- doc specifications and storing them in language/builtin/(type|function).md
---- @param crawler_or_spec CrawlerConfig|table: crawler config instance or declarative crawler spec
-function M:config_builtins(crawler_or_spec)
-	self:_run_scope("builtin", crawler_or_spec)
+--- @param crawler_spec table: declarative crawler spec
+function M:config_builtins(crawler_spec)
+	self:_run_scope("builtin", crawler_spec)
 end
 
---- @param crawler_or_spec CrawlerConfig|table
-function M:config_stdlib(crawler_or_spec)
-	self:_run_scope("stdlib", crawler_or_spec)
+--- @param crawler_spec table
+function M:config_stdlib(crawler_spec)
+	self:_run_scope("stdlib", crawler_spec)
 end
 
---- @param crawler_or_spec CrawlerConfig|table
-function M:config_misc(crawler_or_spec)
-	self:_run_scope("misc", crawler_or_spec)
+--- @param crawler_spec table
+function M:config_misc(crawler_spec)
+	self:_run_scope("misc", crawler_spec)
 end
 
 --- @class AdapterSpec

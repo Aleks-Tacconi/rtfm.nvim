@@ -25,7 +25,7 @@ local function download_list(paths, source, dest_path)
 				local doc_path = utils.data_dir .. dest_path .. entry
 
 				utils.ensure_directory(vim.fn.fnamemodify(doc_path, ":h"))
-				utils.curl("https://cheat.sh/", source .. "/" .. entry, doc_path)
+				utils.curl("https://cheat.sh/" .. source .. "/" .. entry, doc_path)
 			end
 		end
 	end
@@ -35,7 +35,7 @@ end
 --- @param source string: The name of the documentation source to pull
 --- @param dest_path string: The path to save the documentation to
 M.get_cheat_sh = function(source, dest_path)
-	local paths = utils.curl("https://cheat.sh/", source .. "/:list") or ""
+	local paths = utils.curl("https://cheat.sh/" .. source .. "/:list") or ""
 	local paths_list = vim.fn.split(paths, "\n")
 	download_list(paths_list, source, dest_path)
 end

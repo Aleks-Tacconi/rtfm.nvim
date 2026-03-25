@@ -2,12 +2,12 @@ local CrawlerConfig = require("local-docs.abc-adapter.crawler-config")
 local utils = require("local-docs.utils")
 
 local function ensure_crawler(crawler_or_spec)
-	if not crawler_or_spec then
-		return nil
-	end
-
 	if type(crawler_or_spec) == "table" and type(crawler_or_spec.fetch_all_documentation) == "function" then
 		return crawler_or_spec
+	end
+
+	if type(crawler_or_spec) ~= "table" then
+		error("Adapter: expected CrawlerConfig instance or crawler spec table")
 	end
 
 	return CrawlerConfig:new(crawler_or_spec)
@@ -49,9 +49,6 @@ function M:_run_scope(scope_dir, crawler_or_spec)
 	end
 
 	local crawler = ensure_crawler(crawler_or_spec)
-	if not crawler then
-		return
-	end
 
 	crawler:fetch()
 
@@ -91,7 +88,7 @@ function M.define(spec)
 	local adapter = {
 		abstract = false,
 		doc = spec.doc,
-		spec = vim.deepcopy(spec),
+		spec = spec,
 	}
 	setmetatable(adapter, { __index = M })
 
@@ -99,21 +96,17 @@ function M.define(spec)
 		return M.new(self, self.doc)
 	end
 
-	if spec.builtins then
-		function adapter:config_builtins()
-			self:_run_scope("builtin", self.spec.builtins)
-		end
-	end
+	local scopes = {
+		{ spec_key = "builtins", method = "config_builtins", dir = "builtin" },
+		{ spec_key = "stdlib", method = "config_stdlib", dir = "stdlib" },
+		{ spec_key = "misc", method = "config_misc", dir = "misc" },
+	}
 
-	if spec.stdlib then
-		function adapter:config_stdlib()
-			self:_run_scope("stdlib", self.spec.stdlib)
-		end
-	end
-
-	if spec.misc then
-		function adapter:config_misc()
-			self:_run_scope("misc", self.spec.misc)
+	for _, scope in ipairs(scopes) do
+		if spec[scope.spec_key] then
+			adapter[scope.method] = function(self)
+				self:_run_scope(scope.dir, self.spec[scope.spec_key])
+			end
 		end
 	end
 

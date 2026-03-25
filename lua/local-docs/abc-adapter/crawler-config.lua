@@ -3,33 +3,6 @@
 local rule_utils = require("local-docs.abc-adapter.rule.utils")
 local utils = require("local-docs.utils")
 
-local function resolve_relative_url(base_url, source)
-	if type(base_url) ~= "string" or base_url == "" then
-		return source
-	end
-
-	if source:match("^https?://") then
-		return source
-	end
-
-	if source:sub(1, 2) == "//" then
-		local scheme = base_url:match("^(https?)://") or "https"
-		return scheme .. ":" .. source
-	end
-
-	local origin = base_url:match("^(https?://[^/]+)")
-	if not origin then
-		return source
-	end
-
-	if source:sub(1, 1) == "/" then
-		return origin .. source
-	end
-
-	local directory = base_url:match("^(https?://.*/)") or (origin .. "/")
-	return directory .. source
-end
-
 local function source_key(source)
 	local key = source:gsub("^https?://", "")
 	key = key:gsub("[^%w]+", "_"):lower()
@@ -90,29 +63,13 @@ end
 --- @field name_rule Rule: The rule to derive section names from section content, used for naming the output files
 --- @field seed_sources string[]: Optional initial source URLs to fetch documentation from
 --- @field discover_sources boolean: Whether to discover source URLs from the root URL page using source rules
---- @field resolve_relative_sources boolean: Whether to resolve relative source URLs against the root URL
 --- @field dedupe_sources boolean: Whether to deduplicate discovered/seeded source URLs
 --- @field sources string[] Collected documentation source URLs
 local M = {}
 
 --- Contructs a new crawler configuration instance
---- @param spec_or_url table|string: either a spec table or the root url string (legacy signature)
---- @param source_rules Rule[]|nil
---- @param documentation_rules Rule[]|nil
---- @param name_rule Rule|nil
-function M:new(spec_or_url, source_rules, documentation_rules, name_rule)
-	local spec
-	if type(spec_or_url) == "table" then
-		spec = spec_or_url
-	else
-		spec = {
-			url = spec_or_url,
-			source_rules = source_rules,
-			documentation_rules = documentation_rules,
-			name_rule = name_rule,
-		}
-	end
-
+--- @param spec table
+function M:new(spec)
 	validate_spec(spec)
 
 	local instance = {
@@ -122,7 +79,6 @@ function M:new(spec_or_url, source_rules, documentation_rules, name_rule)
 		name_rule = spec.name_rule,
 		seed_sources = spec.seed_sources or {},
 		discover_sources = spec.discover_sources ~= false,
-		resolve_relative_sources = spec.resolve_relative_sources ~= false,
 		dedupe_sources = spec.dedupe_sources ~= false,
 		sources = {},
 		_source_set = {},
@@ -150,24 +106,19 @@ function M:add_source(source)
 		return
 	end
 
-	local resolved = trimmed
-	if self.resolve_relative_sources then
-		resolved = resolve_relative_url(self.url, trimmed)
-	end
-
-	if not utils.ensure_url_format(resolved, "Invalid source URL: " .. trimmed) then
+	if not utils.ensure_url_format(trimmed, "Invalid source URL: " .. trimmed) then
 		return
 	end
 
-	if self.dedupe_sources and self._source_set[resolved] then
+	if self.dedupe_sources and self._source_set[trimmed] then
 		return
 	end
 
 	if self.dedupe_sources then
-		self._source_set[resolved] = true
+		self._source_set[trimmed] = true
 	end
 
-	table.insert(self.sources, resolved)
+	table.insert(self.sources, trimmed)
 end
 
 --- Fetches the root URL page, applies the source rules to discover documentation source links,

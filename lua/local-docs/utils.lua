@@ -36,6 +36,14 @@ M.ensure_directory = function(path)
 	end
 end
 
+--- Writes string content to a file, creating parent directories if needed.
+--- @param path string: The file path to write content to
+--- @param content string: The file content
+M.write_file = function(path, content)
+	M.ensure_directory(vim.fn.fnamemodify(path, ":h"))
+	vim.fn.writefile(vim.split(content or "", "\n", { plain = true, trimempty = false }), path)
+end
+
 --- Ensures that the specified URL has a valid format (i.e., starts with "http://" or "https://").
 --- If the URL does not have a valid format, it displays an error message using vim.notify. and returns false.
 --- If the URL is valid, it returns true.

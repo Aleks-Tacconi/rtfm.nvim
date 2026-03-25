@@ -105,6 +105,27 @@ function M:new(type, ctx)
 	return instance
 end
 
+--- Creates a rule that matches full HTML elements by tag name.
+--- @param tag string
+--- @return Rule
+function M.tag(tag)
+	return M:new("html_tag", tag)
+end
+
+--- Creates a rule that matches full HTML elements by .class or #id selector.
+--- @param selector string
+--- @return Rule
+function M.selector(selector)
+	return M:new("class_id", selector)
+end
+
+--- Creates a rule that matches all expressions for a regex pattern.
+--- @param pattern string
+--- @return Rule
+function M.regex(pattern)
+	return M:new("regex", pattern)
+end
+
 --- @param html string: the html to apply the rule to
 --- @return string[]: strings extracted from the html according to the rule
 function M:apply(html)

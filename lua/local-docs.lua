@@ -1,5 +1,4 @@
 local utils = require("local-docs.utils")
-local cheat_sh = require("local-docs.cheat-sh")
 
 local M = {}
 
@@ -13,7 +12,7 @@ M.setup = function(ensure_installed)
 	utils.ensure_directory(utils.data_dir)
 
 	for _, source in ipairs(M.ensure_installed) do
-		cheat_sh.get_cheat_sh(source, source .. "/cheatsh/")
+		-- do some stuff
 	end
 end
 

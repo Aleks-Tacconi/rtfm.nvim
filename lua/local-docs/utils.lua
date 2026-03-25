@@ -36,4 +36,17 @@ M.ensure_directory = function(path)
 	end
 end
 
+--- Ensures that the specified URL has a valid format (i.e., starts with "http://" or "https://").
+--- If the URL does not have a valid format, it displays an error message using vim.notify. and returns false.
+--- If the URL is valid, it returns true.
+--- @param url string: The URL to check
+--- @param error_message string: The error message to display if the URL does not have a valid format
+M.ensure_url_format = function(url, error_message)
+	if not url:match("^https?://") then
+		vim.notify(error_message, vim.log.levels.ERROR)
+		return false
+	end
+	return true
+end
+
 return M

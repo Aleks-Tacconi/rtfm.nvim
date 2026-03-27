@@ -19,7 +19,6 @@ return Adapter.define({
 			"https://docs.python.org/3/reference/toplevel_components.html",
 			"https://docs.python.org/3/reference/grammar.html",
 		},
-		discover_sources = false,
 		documentation_rules = {
 			Rule.tag("section"),
 		},

@@ -49,7 +49,10 @@ return Adapter.define({
 			"https://example.com/docs/intro.html",
 			"https://example.com/docs/functions.html",
 		},
-		discover_sources = false,
+		source_rules = {
+			Rule.tag("a"),
+			Rule.attr("href"),
+		},
 		documentation_rules = {
 			Rule.tag("section"),
 		},
@@ -66,9 +69,8 @@ return Adapter.define({
 Crawler spec:
 
 - `url` (required): root docs URL
-- `seed_sources` (optional): list of full `https://...` source URLs
-- `discover_sources` (optional, default `true`): discover sources from `url` using `source_rules`
-- `source_rules` (optional): rule chain for extracting source URLs
+- `seed_sources` (optional): additional full `https://...` source URLs to include
+- `source_rules` (optional): rule chain for extracting source URLs from `url` (if empty, discovery is skipped)
 - `documentation_rules` (optional): rule chain for extracting doc sections
 - `name_rule` (optional): rule to derive output file names from sections
 

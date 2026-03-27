@@ -28,34 +28,19 @@ local function source_key(source)
 	return key:sub(1, 32)
 end
 
-local function validate_spec(spec)
-	if type(spec) ~= "table" then
-		error("CrawlerConfig.new: spec must be a table")
-	end
-
-	if type(spec.url) ~= "string" or spec.url == "" then
-		error("CrawlerConfig.new: spec.url must be a non-empty string")
-	end
-
-	if not spec.url:match("^https?://") then
-		error("CrawlerConfig.new: spec.url must start with http:// or https://")
-	end
-end
-
 --- Derives a section name from the given section content using the provided rule.
 --- @param section string: The content of the documentation section to derive a name for
 --- @param rule Rule: The rule to apply to the section content to derive the name
---- @return string: The derived section name, sanitized for use as a file name.
----                 If the rule fails to derive a name, returns "unknown_section".
+--- @return string|nil: The derived section name, sanitized for use as a file name.
 local function derive_section_name(section, rule)
 	if not rule then
-		return "unknown_section"
+		return nil
 	end
 
 	local output = rule:apply(section)
 	local name = output and output[1]
 	if not name then
-		return "unknown_section"
+		return nil
 	end
 
 	name = name:gsub("%s+", "_")
@@ -63,7 +48,7 @@ local function derive_section_name(section, rule)
 	name = name:lower()
 
 	if name == "" then
-		return "unknown_section"
+		return nil
 	end
 
 	return name
@@ -75,7 +60,6 @@ end
 --- @field documentation_rules Rule[]: The chain of rules to split fetched documentation pages into sections
 --- @field name_rule Rule: The rule to derive section names from section content, used for naming the output files
 --- @field seed_sources string[]: Optional initial source URLs to fetch documentation from
---- @field discover_sources boolean: Whether to discover source URLs from the root URL page using source rules
 --- @field dedupe_sources boolean: Whether to deduplicate discovered/seeded source URLs
 --- @field sources string[] Collected documentation source URLs
 local M = {}
@@ -83,15 +67,12 @@ local M = {}
 --- Contructs a new crawler configuration instance
 --- @param spec table
 function M:new(spec)
-	validate_spec(spec)
-
 	local instance = {
 		url = spec.url,
 		source_rules = spec.source_rules or {},
 		documentation_rules = spec.documentation_rules or {},
 		name_rule = spec.name_rule,
 		seed_sources = spec.seed_sources or {},
-		discover_sources = spec.discover_sources ~= false,
 		dedupe_sources = spec.dedupe_sources ~= false,
 		sources = {},
 		_source_set = {},
@@ -110,18 +91,7 @@ end
 --- Adds a source to the crawler configuration
 --- @param source string: The URL of the documentation source to add
 function M:add_source(source)
-	if type(source) ~= "string" then
-		return
-	end
-
 	local trimmed = vim.trim(source)
-	if trimmed == "" then
-		return
-	end
-
-	if not utils.ensure_url_format(trimmed, "Invalid source URL: " .. trimmed) then
-		return
-	end
 
 	if self.dedupe_sources and self._source_set[trimmed] then
 		return
@@ -137,7 +107,7 @@ end
 --- Fetches the root URL page, applies the source rules to discover documentation source links,
 --- and adds them to the crawler configuration
 function M:fetch()
-	if not self.discover_sources or #self.source_rules == 0 then
+	if #self.source_rules == 0 then
 		return
 	end
 
@@ -164,14 +134,11 @@ function M:fetch_documentation(source, output_path)
 		return
 	end
 
-	local sections = { html }
-	if #self.documentation_rules > 0 then
-		sections = apply_rule_chain(html, self.documentation_rules)
-	end
+	local sections = #self.documentation_rules > 0 and apply_rule_chain(html, self.documentation_rules) or { html }
 
 	for index, section in ipairs(sections) do
 		local section_name = derive_section_name(section, self.name_rule)
-		if section_name == "unknown_section" then
+		if not section_name then
 			section_name = "section_" .. source_key(source) .. "_" .. index
 		end
 

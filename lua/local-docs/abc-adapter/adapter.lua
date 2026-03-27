@@ -1,16 +1,6 @@
 local CrawlerConfig = require("local-docs.abc-adapter.crawler-config")
 local utils = require("local-docs.utils")
 
-local function validate_adapter_spec(spec)
-	if type(spec) ~= "table" then
-		error("Adapter.define: spec must be a table")
-	end
-
-	if type(spec.doc) ~= "string" or not spec.doc:match("^[%w_-]+$") then
-		error("Adapter.define: spec.doc must match ^[%w_-]+$")
-	end
-end
-
 --- @class Adapter
 --- Abstract base adapter class, defines the interface for pulling doc specifications
 --- and storing them in language/option/(data_structure|type|function).md
@@ -102,8 +92,6 @@ end
 --- @param spec AdapterSpec
 --- @return Adapter
 function M.define(spec)
-	validate_adapter_spec(spec)
-
 	local adapter = {
 		abstract = false,
 		doc = spec.doc,

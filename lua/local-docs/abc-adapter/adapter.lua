@@ -4,11 +4,8 @@ local utils = require("local-docs.utils")
 --- @class Adapter
 --- Abstract base adapter class, defines the interface for pulling doc specifications
 --- and storing them in language/option/(data_structure|type|function).md
---- @field abstract boolean: Indicates that this is an abstract base class and should not be instantiated directly
 --- @field doc string: The language / framework the documentation being pulled from is for, used for display purposes
-local M = {
-	abstract = true,
-}
+local M = {}
 
 M.SCOPES = {
 	{ spec_key = "builtins", method = "config_builtins", dir = "builtin" },
@@ -93,7 +90,6 @@ end
 --- @return Adapter
 function M.define(spec)
 	local adapter = {
-		abstract = false,
 		doc = spec.doc,
 		spec = spec,
 	}

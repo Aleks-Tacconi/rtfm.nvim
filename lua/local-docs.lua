@@ -9,18 +9,6 @@ M.adapters = {
 
 M.ensure_installed = {}
 
-local function normalize_ensure_installed(opts)
-	if type(opts) ~= "table" then
-		return M.ensure_installed
-	end
-
-	if vim.islist(opts.ensure_installed) then
-		return opts.ensure_installed
-	end
-
-	return M.ensure_installed
-end
-
 local function adapter_names()
 	local names = {}
 	for name, _ in pairs(M.adapters) do
@@ -41,53 +29,19 @@ local function complete_adapter_name(arg_lead)
 end
 
 local function load_adapter(name)
-	local module_path = M.adapters[name]
-	if not module_path then
-		return nil, string.format("Unknown adapter '%s'", name)
-	end
-
-	local ok, adapter_or_err = pcall(require, module_path)
-	if not ok then
-		return nil, string.format("Failed loading adapter '%s': %s", name, adapter_or_err)
-	end
-
-	return adapter_or_err, nil
+	return require(M.adapters[name])
 end
 
 function M.register_adapter(name, module_path)
-	if type(name) ~= "string" or name == "" then
-		error("register_adapter: name must be a non-empty string")
-	end
-	if type(module_path) ~= "string" or module_path == "" then
-		error("register_adapter: module_path must be a non-empty string")
-	end
-
 	M.adapters[name] = module_path
 end
 
 function M.install_adapter(name)
-	local adapter_module, load_err = load_adapter(name)
-	if load_err then
-		vim.notify(load_err, vim.log.levels.ERROR)
-		return false
-	end
-
-	local adapter, instance_err = Adapter.instantiate(adapter_module)
-	if instance_err then
-		vim.notify(instance_err, vim.log.levels.ERROR)
-		return false
-	end
+	local adapter = load_adapter(name):new()
 
 	for _, scope in ipairs(Adapter.SCOPES) do
-		local has_scope = type(adapter.spec) == "table" and adapter.spec[scope.spec_key] ~= nil
-		if has_scope and type(adapter[scope.method]) == "function" then
-			local ok, err = pcall(function()
-				adapter[scope.method](adapter)
-			end)
-			if not ok then
-				vim.notify(string.format("Adapter '%s' failed on %s: %s", name, scope.spec_key, err), vim.log.levels.ERROR)
-				return false
-			end
+		if adapter.spec[scope.spec_key] then
+			adapter[scope.method](adapter)
 		end
 	end
 
@@ -96,17 +50,7 @@ function M.install_adapter(name)
 end
 
 function M.uninstall_adapter(name)
-	if not M.adapters[name] then
-		vim.notify(string.format("Unknown '%s'", name), vim.log.levels.ERROR)
-		return false
-	end
-
 	local path = utils.data_dir .. name
-	if vim.fn.isdirectory(path) == 0 then
-		vim.notify(string.format("No local docs found for '%s'", name), vim.log.levels.WARN)
-		return true
-	end
-
 	vim.fn.delete(path, "rf")
 	vim.notify(string.format("Uninstalled '%s'", name), vim.log.levels.INFO)
 	return true
@@ -137,7 +81,7 @@ M.setup = function(opts)
 		vim.g.local_docs_commands_created = 1
 	end
 
-	M.ensure_installed = normalize_ensure_installed(opts)
+	M.ensure_installed = (opts and opts.ensure_installed) or {}
 
 	utils.ensure_directory(utils.data_dir)
 

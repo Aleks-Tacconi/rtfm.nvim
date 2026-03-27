@@ -25,13 +25,6 @@ end
 --- @param scope_dir string
 --- @param crawler_spec table
 function M:_run_scope(scope_dir, crawler_spec)
-	if type(self.doc) ~= "string" or self.doc == "" then
-		error("Adapter: missing doc identifier")
-	end
-	if type(crawler_spec) ~= "table" then
-		error("Adapter: expected crawler spec table")
-	end
-
 	local crawler = CrawlerConfig:new(crawler_spec)
 
 	crawler:fetch()
@@ -55,28 +48,6 @@ end
 --- @param crawler_spec table
 function M:config_misc(crawler_spec)
 	self:_run_scope("misc", crawler_spec)
-end
-
---- Instantiates an adapter module returned by require().
---- @param adapter_module table
---- @return table|nil adapter
---- @return string|nil err
-function M.instantiate(adapter_module)
-	if type(adapter_module) ~= "table" then
-		return nil, "Adapter module must return a table"
-	end
-
-	if type(adapter_module.new) == "function" then
-		local ok, instance_or_err = pcall(function()
-			return adapter_module:new()
-		end)
-		if not ok then
-			return nil, string.format("Adapter constructor failed: %s", instance_or_err)
-		end
-		return instance_or_err, nil
-	end
-
-	return adapter_module, nil
 end
 
 --- @class AdapterSpec

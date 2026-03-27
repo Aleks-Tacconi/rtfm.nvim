@@ -4,16 +4,7 @@ local scanner = require("local-docs.abc-adapter.rule.scanner")
 
 --- Applies a rule to the given html string, returning the results as an array of strings
 local function __html_tag_rule(html, ctx)
-	if type(html) ~= "string" or type(ctx) ~= "string" or ctx == "" then
-		return {}
-	end
-
-	local tag = ctx:match("^%s*([%w:_-]+)%s*$")
-	if not tag then
-		return {}
-	end
-
-	local target = tag:lower()
+	local target = ctx:lower()
 	return scanner.collect_elements(html, function(node)
 		return node.name_lower == target
 	end)
@@ -21,18 +12,8 @@ end
 
 --- Applies a class/id rule to the given html string, returning the results as an array of strings
 local function __class_id_rule(html, ctx)
-	if type(html) ~= "string" or type(ctx) ~= "string" or #ctx < 2 then
-		return {}
-	end
-
 	local selector_type = ctx:sub(1, 1)
 	local value = ctx:sub(2)
-	if selector_type ~= "." and selector_type ~= "#" then
-		return {}
-	end
-	if value == "" then
-		return {}
-	end
 
 	if selector_type == "." then
 		return scanner.collect_elements(html, function(node)
@@ -59,15 +40,6 @@ end
 
 --- Applies a regex rule to the given html string, returning the results as an array of strings
 local function __regex_rule(html, ctx)
-	if type(html) ~= "string" or type(ctx) ~= "string" or ctx == "" then
-		return {}
-	end
-
-	local ok = pcall(vim.regex, ctx)
-	if not ok then
-		return {}
-	end
-
 	local results = {}
 	local offset = 0
 

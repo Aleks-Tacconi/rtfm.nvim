@@ -149,7 +149,7 @@ function M:fetch_documentation(source, output_path)
 		end
 
 		local file_path = output_path .. "/" .. section_name .. ".md"
-		utils.write_file(file_path, section)
+		utils.write_file(file_path, utils.html_to_markdown(section))
 	end
 end
 

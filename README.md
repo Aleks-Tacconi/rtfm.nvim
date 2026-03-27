@@ -2,6 +2,11 @@
 
 Generate and store local markdown docs for languages/frameworks via pluggable adapters.
 
+## Requirements
+
+- `curl`
+- `pandoc` (required for HTML -> Markdown conversion)
+
 ## Setup
 
 ```lua

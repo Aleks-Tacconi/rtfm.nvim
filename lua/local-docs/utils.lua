@@ -42,4 +42,40 @@ M.write_file = function(path, content)
 	vim.fn.writefile(vim.split(content or "", "\n", { plain = true, trimempty = false }), path)
 end
 
+local function normalize_markdown(md)
+	md = md:gsub("%[¶%]%([^\n]-%)", "")
+
+	local lines = vim.split(md, "\n", { plain = true, trimempty = false })
+	for i, line in ipairs(lines) do
+		if line == "``` highlight" then
+			lines[i] = "```text"
+		elseif line:match("^%[%^%d+%]:%s*$") then
+			lines[i] = ""
+		end
+	end
+
+	return table.concat(lines, "\n")
+end
+
+--- Converts HTML to Markdown using pandoc.
+--- @param html string
+--- @return string
+M.html_to_markdown = function(html)
+	local output = vim.fn.system({
+		"pandoc",
+		"-f",
+		"html",
+		"-t",
+		"gfm-raw_html",
+		"--wrap=none",
+		"--quiet",
+	}, html)
+
+	if vim.v.shell_error ~= 0 then
+		error("pandoc failed converting html to markdown")
+	end
+
+	return normalize_markdown(output)
+end
+
 return M

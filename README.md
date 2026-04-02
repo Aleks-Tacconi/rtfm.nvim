@@ -1,4 +1,6 @@
-# rtfm.nvim
+<p align="center">
+  <img src="assets/logo.png" alt="rtfm.nvim" />
+</p>
 
 Generate and store local markdown docs for languages/frameworks via pluggable adapters.
 

@@ -66,6 +66,34 @@ local function source_name(url)
 	return (basename:gsub("%.html?$", ""))
 end
 
+local function derive_section_name(section, rule)
+	local output = rule:apply(section)
+	local name = output and output[1]
+	if not name or name == "" then
+		return nil
+	end
+
+	return vim.trim(name)
+end
+
+local function normalize_section_name(source, section_name)
+	local normalized = section_name
+	local prefix = source .. "."
+
+	if normalized:sub(1, #prefix) == prefix then
+		normalized = normalized:sub(#prefix + 1)
+	end
+
+	normalized = normalized:gsub("%._+", "__")
+	normalized = normalized:gsub("%.", "__")
+
+	if normalized == "" then
+		return nil
+	end
+
+	return normalized
+end
+
 local function section_id(section)
 	return section:match(' id="([^"]+)"') or section:match(" id='([^']+)'")
 end
@@ -150,7 +178,7 @@ end
 --- @field documentation_rules Rule[]: The chain of rules to split fetched documentation pages into sections
 --- @field seed_sources string[]: Optional initial source URLs to fetch documentation from
 --- @field dedupe_sources boolean: Whether to deduplicate discovered/seeded source URLs
---- @field path_mapper fun(ctx: table): string Maps a section context to a relative output path without extension
+--- @field name_rule Rule Derives a stable section name from extracted section html
 --- @field sources string[] Collected documentation source URLs
 local M = {}
 
@@ -161,7 +189,7 @@ function M:new(spec)
 		url = spec.url,
 		source_rules = spec.source_rules or {},
 		documentation_rules = spec.documentation_rules or {},
-		path_mapper = spec.path_mapper,
+		name_rule = spec.name_rule,
 		seed_sources = spec.seed_sources or {},
 		dedupe_sources = spec.dedupe_sources ~= false,
 		sources = {},
@@ -214,8 +242,8 @@ function M:fetch()
 	end
 end
 
---- Fetches a documentation source, splits it into sections, and writes each section to the
---- relative markdown path returned by path_mapper(ctx).
+--- Fetches a documentation source, splits it into sections, derives stable names from name_rule,
+--- and writes the sections under source_name/normalized_name.md.
 --- @param source string: The URL of the documentation source to fetch
 --- @param output_path string: The directory path to store the fetched documentation sections in
 function M:fetch_documentation(source, output_path)
@@ -225,10 +253,21 @@ function M:fetch_documentation(source, output_path)
 	end
 
 	local sections = #self.documentation_rules > 0 and apply_rule_chain(html, self.documentation_rules) or { html }
+	local source_key = source_name(source):gsub("%.", "/")
 
 	for index, section in ipairs(sections) do
 		local ctx = section_context(source, section, index)
-		local relative_path = path_utils.normalize(self.path_mapper(ctx))
+		local section_name = derive_section_name(section, self.name_rule)
+		if not section_name then
+			error(string.format("could not derive section name for '%s' section %d", source, index))
+		end
+
+		local normalized_name = normalize_section_name(ctx.source_name, section_name)
+		if not normalized_name then
+			error(string.format("invalid normalized section name '%s' for '%s'", section_name, source))
+		end
+
+		local relative_path = path_utils.normalize(string.format("%s/%s", source_key, normalized_name))
 		local file_path = output_path .. "/" .. relative_path .. ".md"
 		utils.write_file(file_path, utils.html_to_markdown(section))
 		register_index_entry(self._index_entries, self._index_order, relative_path, ctx)

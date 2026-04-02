@@ -59,9 +59,7 @@ return Adapter.define({
 		documentation_rules = {
 			Rule.tag("section"),
 		},
-		path_mapper = function(ctx)
-			return ctx.source_name .. "/" .. ctx.section_id
-		end,
+		name_rule = Rule.regex([[<section id="\zs[^"]\+\ze"]]),
 	},
 })
 ```
@@ -77,19 +75,23 @@ Crawler spec:
 - `seed_sources` (optional): additional full `https://...` source URLs to include
 - `source_rules` (optional): rule chain for extracting source URLs from `url` (if empty, discovery is skipped)
 - `documentation_rules` (required): rule chain for extracting doc sections
-- `path_mapper` (required): function receiving `ctx` and returning a relative output path without `.md`
+- `name_rule` (required): rule that extracts the section name from each documentation fragment
 
-`path_mapper(ctx)` receives:
+Docs are always written as:
 
-- `ctx.source_url`: source page URL
-- `ctx.source_path`: source page path, such as `/docs/functions.html`
-- `ctx.source_name`: source page basename without `.html`
-- `ctx.section_html`: raw HTML for the extracted section
-- `ctx.section_index`: 1-based section index within the page
-- `ctx.section_id`: first `id="..."` found in the extracted section
-- `ctx.heading_text`: first heading text found in the extracted section
+`<scope>/<source_name>/<normalized_name>.md`
 
-`path_mapper` is the only output naming mechanism. It must return a non-empty relative path like `os/system`.
+Normalization is fixed in core:
+
+- if the extracted name starts with `<source_name>.`, that prefix is removed
+- `._...` becomes `__`
+- remaining `.` become `__`
+
+Examples:
+
+- `os.system` -> `os/system.md`
+- `os.PathLike.__fspath__` -> `os/PathLike__fspath__.md`
+- `os.stat_result.st_mode` -> `os/stat_result__st_mode.md`
 
 Generated markdown is wrapped for terminal readability, and each output directory also gets a numbered `_index.md` file that preserves extraction order.
 

@@ -21,8 +21,8 @@ local function validate_scope(scope_name, scope)
 		error(string.format("adapter scope '%s' requires a non-empty 'url'", scope_name))
 	end
 
-	if type(scope.path_mapper) ~= "function" then
-		error(string.format("adapter scope '%s' requires a 'path_mapper(ctx)' function", scope_name))
+	if type(scope.name_rule) ~= "table" then
+		error(string.format("adapter scope '%s' requires a 'name_rule'", scope_name))
 	end
 
 	validate_rules(scope_name, "documentation_rules", scope.documentation_rules)
@@ -33,10 +33,6 @@ local function validate_scope(scope_name, scope)
 
 	if scope.source_rules ~= nil then
 		validate_rules(scope_name, "source_rules", scope.source_rules)
-	end
-
-	if scope.name_rule ~= nil then
-		error(string.format("adapter scope '%s' uses removed field 'name_rule'; use 'path_mapper' only", scope_name))
 	end
 
 	if #scope.documentation_rules == 0 then

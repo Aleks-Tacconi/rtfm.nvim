@@ -4,36 +4,6 @@ local Rule = require("local-docs.abc-adapter.rule")
 local ROOT_URL = "https://docs.python.org/3/reference/index.html"
 local STDLIB_URL = "https://docs.python.org/3/library/index.html"
 
-local function section_path(ctx)
-	if not ctx.section_id then
-		error(string.format("python adapter could not derive a path for '%s' section %d", ctx.source_url, ctx.section_index))
-	end
-
-	return string.format("%s/%s", ctx.source_name, ctx.section_id)
-end
-
-local function stdlib_symbol_path(ctx)
-	if not ctx.section_id then
-		error(string.format("python stdlib adapter could not derive a symbol path for '%s' section %d", ctx.source_url, ctx.section_index))
-	end
-
-	local prefix = ctx.source_name .. "."
-	if ctx.section_id:sub(1, #prefix) ~= prefix then
-		error(string.format("python stdlib section '%s' does not match source '%s'", ctx.section_id, ctx.source_name))
-	end
-
-	local parts = {}
-	for part in ctx.section_id:sub(#prefix + 1):gmatch("[^.]+") do
-		if #parts > 0 then
-			part = part:gsub("^_+", "")
-		end
-		table.insert(parts, part)
-	end
-
-	local symbol_name = table.concat(parts, "__")
-	return string.format("%s/%s", ctx.source_name:gsub("%.", "/"), symbol_name)
-end
-
 return Adapter.define({
 	doc = "python",
 	builtins = {
@@ -53,7 +23,7 @@ return Adapter.define({
 		documentation_rules = {
 			Rule.tag("section"),
 		},
-		path_mapper = section_path,
+		name_rule = Rule.regex([[<section id="\zs[^"]\+\ze"]]),
 	},
 	stdlib = {
 		url = STDLIB_URL,
@@ -63,6 +33,6 @@ return Adapter.define({
 		documentation_rules = {
 			Rule.selector(".py"),
 		},
-		path_mapper = stdlib_symbol_path,
+		name_rule = Rule.regex([[ id="\zs[^"]\+\ze"]]),
 	},
 })

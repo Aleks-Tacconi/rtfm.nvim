@@ -15,15 +15,15 @@
 
 <div align="center">
 
-<img src="https://img.shields.io/badge/Lua-2C2D72?style=flat-square&logo=lua&logoColor=white" alt="Lua" />
-&nbsp;&nbsp;
-<img src="https://img.shields.io/badge/Neovim-57A143?style=flat-square&logo=neovim&logoColor=white" alt="Neovim" />
-&nbsp;&nbsp;
-<img src="https://img.shields.io/badge/Markdown-2F333A?style=flat-square&logo=markdown&logoColor=white" alt="Markdown" />
-&nbsp;&nbsp;
-<img src="https://img.shields.io/badge/Offline-3A4A3F?style=flat-square&logo=bookstack&logoColor=white" alt="Offline" />
-&nbsp;&nbsp;
-<img src="https://img.shields.io/badge/Adapters-3F7A32?style=flat-square&logo=socketdotio&logoColor=white" alt="Adapters" />
+<img src="https://img.shields.io/badge/Lua-2C2D72?style=for-the-badge&logo=lua&logoColor=white" alt="Lua" />
+&nbsp;
+<img src="https://img.shields.io/badge/Neovim-57A143?style=for-the-badge&logo=neovim&logoColor=white" alt="Neovim" />
+&nbsp;
+<img src="https://img.shields.io/badge/Markdown-2F333A?style=for-the-badge&logo=markdown&logoColor=white" alt="Markdown" />
+&nbsp;
+<img src="https://img.shields.io/badge/Offline-3A4A3F?style=for-the-badge&logo=bookstack&logoColor=white" alt="Offline" />
+&nbsp;
+<img src="https://img.shields.io/badge/Adapters-3F7A32?style=for-the-badge&logo=socketdotio&logoColor=white" alt="Adapters" />
 
 </div>
 

@@ -126,7 +126,7 @@ end
 
 local function display_title(ctx, relative_path)
 	if ctx.heading_text and ctx.heading_text ~= "" then
-		return ctx.heading_text
+		return ctx.heading_text:gsub("¶", ""):gsub("%s+$", "")
 	end
 
 	if ctx.section_id and ctx.section_id ~= "" then
@@ -151,7 +151,7 @@ local function write_index(output_path, entries)
 
 	local lines = {}
 	for index, entry in ipairs(entries) do
-		table.insert(lines, string.format("%d. [%s](./%s.md)", index, entry.title, entry.path))
+		table.insert(lines, string.format("%d. %s - %s.md", index, entry.title, entry.path))
 	end
 
 	utils.write_file(output_path .. "/_index.md", table.concat(lines, "\n") .. "\n")

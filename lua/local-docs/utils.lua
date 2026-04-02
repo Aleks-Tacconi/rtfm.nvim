@@ -43,18 +43,45 @@ M.write_file = function(path, content)
 end
 
 local function normalize_markdown(md)
-	md = md:gsub("%[¶%]%([^\n]-%)", "")
-
 	local lines = vim.split(md, "\n", { plain = true, trimempty = false })
+	local in_code_block = false
+
 	for i, line in ipairs(lines) do
-		if line == "``` highlight" then
+		if line:match("^```") then
+			if line == "``` highlight" then
+				lines[i] = "```text"
+			end
+			in_code_block = not in_code_block
+		elseif not in_code_block then
+			if line:match("^%s*%[[^%]]-%]:%s*.-$") or line:match("^%s*$") then
+				lines[i] = ""
+			else
+			line = line:gsub("%[¶%]%([^\n]-%)", "")
+			line = line:gsub("%[([^%[%]]-)%]%([^\n]-%)", "%1")
+			line = line:gsub("%[([^%[%]]-)%]%[[^%]]-%]", "%1")
+			line = line:gsub("%[([^%[%]]-)%]", "%1")
+			line = line:gsub("¶", "")
+
+			local previous = nil
+			while line ~= previous do
+				previous = line
+				line = line:gsub("`([^`\n]-)``%s*``([^`\n]-)`", "`%1 %2`")
+			end
+
+			if line:match("^%s*$") then
+				lines[i] = ""
+			else
+				lines[i] = line
+			end
+			end
+		elseif line == "``` highlight" then
 			lines[i] = "```text"
-		elseif line:match("^%[%^%d+%]:%s*$") then
-			lines[i] = ""
 		end
 	end
 
-	return table.concat(lines, "\n")
+	local normalized = table.concat(lines, "\n")
+	normalized = normalized:gsub("\n\n\n+", "\n\n")
+	return vim.trim(normalized) .. "\n"
 end
 
 --- Converts HTML to Markdown using pandoc.
@@ -67,6 +94,7 @@ M.html_to_markdown = function(html)
 		"html",
 		"-t",
 		"gfm-raw_html",
+		"--reference-links",
 		"--wrap=auto",
 		"--columns=100",
 		"--quiet",

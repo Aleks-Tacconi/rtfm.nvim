@@ -5,6 +5,12 @@
   <img src="assets/logo.png" alt="rtfm.nvim" width="480"/>
 </div>
 
+<div align="center">
+
+`Lua` `Neovim` `Markdown` `Offline Docs` `Adapters`
+
+</div>
+
 <br/>
 <br/>
 <br/>

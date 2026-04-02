@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/logo.png" alt="rtfm.nvim" />
+  <img src="assets/logo.png" alt="rtfm.nvim" width="520"/>
 </div>
 
 Generate and store local markdown docs for languages/frameworks via pluggable adapters.

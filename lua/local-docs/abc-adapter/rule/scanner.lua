@@ -157,4 +157,36 @@ function M.collect_elements(html, predicate)
 	return results
 end
 
+function M.collect_elements_deep(html, predicate)
+	local results = {}
+	local pos = 1
+
+	while pos <= #html do
+		local open_start = html:find("<", pos, true)
+		if not open_start then
+			break
+		end
+
+		local node = M.parse_opening_tag(html, open_start)
+		if not node then
+			pos = open_start + 1
+		else
+			if predicate(node) then
+				if node.self_closing or VOID_TAGS[node.name_lower] then
+					table.insert(results, node.opening_fragment)
+				else
+					local close_start, close_end = M.find_matching_close(html, node.name, node.open_end + 1)
+					if close_start and close_end then
+						table.insert(results, html:sub(node.open_start, close_end))
+					end
+				end
+			end
+
+			pos = node.open_end + 1
+		end
+	end
+
+	return results
+end
+
 return M

@@ -57,7 +57,8 @@ return Adapter.define({
 			"https://example.com/docs/functions.html",
 		},
 		documentation_rules = {
-			Rule.tag("section"),
+			Rule.deep_tag("section"),
+			Rule.heading_level(2),
 		},
 		name_rule = Rule.regex([[<section id="\zs[^"]\+\ze"]]),
 	},
@@ -77,6 +78,12 @@ Crawler spec:
 - `documentation_rules` (required): rule chain for extracting doc sections
 - `name_rule` (required): rule that extracts the section name from each documentation fragment
 
+Useful rule helpers:
+
+- `Rule.tag("section")`: top-level matching tags
+- `Rule.deep_tag("section")`: nested matching tags as well
+- `Rule.heading_level(2)`: keep only fragments whose first heading is `h2`
+
 Docs are always written as:
 
 `<scope>/<source_name>/<normalized_name>.md`
@@ -93,7 +100,7 @@ Examples:
 - `os.PathLike.__fspath__` -> `os/PathLike__fspath__.md`
 - `os.stat_result.st_mode` -> `os/stat_result__st_mode.md`
 
-Generated markdown is wrapped for terminal readability, and each output directory also gets a numbered `_index.md` file that preserves extraction order.
+Generated markdown is wrapped for terminal readability, and each scope root gets a numbered `_index.md` file that preserves extraction order.
 
 ## Output Layout
 
@@ -104,10 +111,10 @@ Docs are written under `stdpath("data") .. "/local-docs/"`, typically:
   python/
 	  builtin/
 		introduction/introduction.md
-		introduction/_index.md
 		compound_stmts/if.md
+		_index.md
 	  stdlib/
 		os/system.md
-		os/_index.md
+		_index.md
 	  misc/
 ```

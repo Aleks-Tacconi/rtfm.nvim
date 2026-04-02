@@ -1,6 +1,6 @@
 local scanner = require("local-docs.abc-adapter.rule.scanner")
 
---- @alias rule_type "html_tag"|"class_id"|"regex"
+--- @alias rule_type "html_tag"|"html_tag_deep"|"class_id"|"heading_level"|"regex"
 
 --- Applies a rule to the given html string, returning the results as an array of strings
 local function __html_tag_rule(html, ctx)
@@ -36,6 +36,19 @@ local function __class_id_rule(html, ctx)
 		local id = scanner.extract_attr_value(node.opening_fragment, "id")
 		return id == value
 	end)
+end
+
+--- Filters fragments by first heading level.
+--- @param html string
+--- @param ctx string
+--- @return string[]
+local function __heading_level_rule(html, ctx)
+	local heading = html:match("<h([1-6])[^>]*>")
+	if heading == tostring(ctx) then
+		return { html }
+	end
+
+	return {}
 end
 
 --- Applies a regex rule to the given html string, returning the results as an array of strings
@@ -84,11 +97,25 @@ function M.tag(tag)
 	return M:new("html_tag", tag)
 end
 
+--- Creates a rule that matches full HTML elements by tag name, including nested matches.
+--- @param tag string
+--- @return Rule
+function M.deep_tag(tag)
+	return M:new("html_tag_deep", tag)
+end
+
 --- Creates a rule that matches full HTML elements by .class or #id selector.
 --- @param selector string
 --- @return Rule
 function M.selector(selector)
 	return M:new("class_id", selector)
+end
+
+--- Creates a rule that keeps fragments whose first heading is at the given level.
+--- @param level integer
+--- @return Rule
+function M.heading_level(level)
+	return M:new("heading_level", tostring(level))
 end
 
 --- Creates a rule that matches all expressions for a regex pattern.
@@ -104,8 +131,17 @@ function M:apply(html)
 	if self.type == "html_tag" then
 		return __html_tag_rule(html, self.ctx)
 	end
+	if self.type == "html_tag_deep" then
+		local target = self.ctx:lower()
+		return scanner.collect_elements_deep(html, function(node)
+			return node.name_lower == target
+		end)
+	end
 	if self.type == "class_id" then
 		return __class_id_rule(html, self.ctx)
+	end
+	if self.type == "heading_level" then
+		return __heading_level_rule(html, self.ctx)
 	end
 	return __regex_rule(html, self.ctx)
 end

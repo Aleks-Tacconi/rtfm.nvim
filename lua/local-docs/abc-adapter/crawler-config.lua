@@ -136,40 +136,25 @@ local function display_title(ctx, relative_path)
 	return relative_path:match("([^/]+)$") or relative_path
 end
 
-local function register_index_entry(entries_by_dir, order_by_dir, relative_path, ctx)
-	local directory = vim.fn.fnamemodify(relative_path, ":h")
-	if directory == "." then
-		directory = ""
-	end
-
-	if not entries_by_dir[directory] then
-		entries_by_dir[directory] = {}
-		table.insert(order_by_dir, directory)
-	end
-
-	table.insert(entries_by_dir[directory], {
+local function register_index_entry(entries, relative_path, ctx)
+	table.insert(entries, {
 		path = relative_path,
 		title = display_title(ctx, relative_path),
 	})
 end
 
-local function write_indexes(output_path, entries_by_dir, order_by_dir)
-	for _, directory in ipairs(order_by_dir) do
-		local lines = {}
-		local entries = entries_by_dir[directory]
 
-		for index, entry in ipairs(entries) do
-			local relative_target = entry.path:match("([^/]+)$") or entry.path
-			table.insert(lines, string.format("%d. [%s](./%s.md)", index, entry.title, relative_target))
-		end
-
-		local index_path = output_path .. "/_index.md"
-		if directory ~= "" then
-			index_path = output_path .. "/" .. directory .. "/_index.md"
-		end
-
-		utils.write_file(index_path, table.concat(lines, "\n") .. "\n")
+local function write_index(output_path, entries)
+	if #entries == 0 then
+		return
 	end
+
+	local lines = {}
+	for index, entry in ipairs(entries) do
+		table.insert(lines, string.format("%d. [%s](./%s.md)", index, entry.title, entry.path))
+	end
+
+	utils.write_file(output_path .. "/_index.md", table.concat(lines, "\n") .. "\n")
 end
 
 --- @class CrawlerConfig
@@ -195,7 +180,6 @@ function M:new(spec)
 		sources = {},
 		_source_set = {},
 		_index_entries = {},
-		_index_order = {},
 	}
 
 	setmetatable(instance, { __index = self })
@@ -270,7 +254,7 @@ function M:fetch_documentation(source, output_path)
 		local relative_path = path_utils.normalize(string.format("%s/%s", source_key, normalized_name))
 		local file_path = output_path .. "/" .. relative_path .. ".md"
 		utils.write_file(file_path, utils.html_to_markdown(section))
-		register_index_entry(self._index_entries, self._index_order, relative_path, ctx)
+		register_index_entry(self._index_entries, relative_path, ctx)
 	end
 end
 
@@ -281,7 +265,7 @@ function M:fetch_all_documentation(output_path)
 		self:fetch_documentation(source, output_path)
 	end
 
-	write_indexes(output_path, self._index_entries, self._index_order)
+	write_index(output_path, self._index_entries)
 end
 
 return M

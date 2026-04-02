@@ -21,7 +21,8 @@ return Adapter.define({
 			"https://docs.python.org/3/reference/grammar.html",
 		},
 		documentation_rules = {
-			Rule.tag("section"),
+			Rule.deep_tag("section"),
+			Rule.heading_level(2),
 		},
 		name_rule = Rule.regex([[<section id="\zs[^"]\+\ze"]]),
 	},

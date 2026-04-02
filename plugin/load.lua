@@ -1,1 +1,1 @@
-require("local-docs").setup()
+require("rtfm").setup()

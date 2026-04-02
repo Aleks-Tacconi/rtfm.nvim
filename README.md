@@ -1,4 +1,4 @@
-# local-docs.nvim
+# rtfm.nvim
 
 Generate and store local markdown docs for languages/frameworks via pluggable adapters.
 
@@ -10,43 +10,43 @@ Generate and store local markdown docs for languages/frameworks via pluggable ad
 ## Setup
 
 ```lua
-require("local-docs").setup({
+require("rtfm").setup({
 	ensure_installed = { "python" },
 })
 ```
 
-If `ensure_installed` is omitted, nothing is downloaded until `:LocalDocsInstall` is run.
+If `ensure_installed` is omitted, nothing is downloaded until `:RtfmInstall` is run.
 
 ## User Commands
 
-- `:LocalDocsInstall <adapter>`
-- `:LocalDocsUninstall <adapter>`
+- `:RtfmInstall <adapter>`
+- `:RtfmUninstall <adapter>`
 
 The command argument is completed from registered adapters.
 
 ## Registering Adapters
 
-Built-in adapters are defined in `lua/local-docs.lua`:
+Built-in adapters are defined in `lua/rtfm.lua`:
 
 ```lua
-M.adapters = {
-	python = "local-docs.adapters.python",
+	M.adapters = {
+	python = "rtfm.adapters.python",
 }
 ```
 
 You can register your own adapter module at runtime:
 
 ```lua
-require("local-docs").register_adapter("my_lang", "my-plugin.adapters.my_lang")
+require("rtfm").register_adapter("my_lang", "my-plugin.adapters.my_lang")
 ```
 
 ## Creating a New Adapter
 
-Create a file like `lua/local-docs/adapters/my_lang.lua` and return `Adapter.define(...)`.
+Create a file like `lua/rtfm/adapters/my_lang.lua` and return `Adapter.define(...)`.
 
 ```lua
-local Adapter = require("local-docs.abc-adapter.adapter")
-local Rule = require("local-docs.abc-adapter.rule")
+local Adapter = require("rtfm.abc-adapter.adapter")
+local Rule = require("rtfm.abc-adapter.rule")
 
 return Adapter.define({
 	doc = "my_lang",
@@ -104,10 +104,10 @@ Generated markdown is wrapped for terminal readability, and each scope root gets
 
 ## Output Layout
 
-Docs are written under `stdpath("data") .. "/local-docs/"`, typically:
+Docs are written under `stdpath("data") .. "/rtfm/"`, typically:
 
 ```text
-<data>/local-docs/
+<data>/rtfm/
   python/
 	  builtin/
 		introduction/introduction.md

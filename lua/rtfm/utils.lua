@@ -2,6 +2,15 @@ local M = {}
 
 M.data_dir = vim.fn.stdpath("data") .. "/rtfm/"
 
+local function shell_error_message(prefix, result)
+	local stderr = vim.trim(result.stderr or "")
+	if stderr == "" then
+		return string.format("%s failed with exit code %d", prefix, result.code or -1)
+	end
+
+	return string.format("%s failed: %s", prefix, stderr)
+end
+
 --- CURL wrapper function to fetch a URL. Returns the fetched content as a string.
 --- If save_file is provided, it saves the content to the specified file path instead.
 --- @param url string: The full URL to fetch
@@ -26,6 +35,20 @@ M.curl = function(url, save_file)
 	end
 end
 
+--- Fetches a URL without blocking the Neovim UI.
+--- @param url string
+--- @param callback fun(ok: boolean, result: string)
+M.curl_async = function(url, callback)
+	vim.system({ "curl", "-fsSL", url }, { text = true }, vim.schedule_wrap(function(result)
+		if result.code ~= 0 then
+			callback(false, shell_error_message(string.format("curl %s", url), result))
+			return
+		end
+
+		callback(true, result.stdout or "")
+	end))
+end
+
 --- Ensures that the specified directory exists. If it does not exist, it creates the directory.
 --- @param path string: The directory path to ensure exists
 M.ensure_directory = function(path)
@@ -40,6 +63,56 @@ end
 M.write_file = function(path, content)
 	M.ensure_directory(vim.fn.fnamemodify(path, ":h"))
 	vim.fn.writefile(vim.split(content or "", "\n", { plain = true, trimempty = false }), path)
+end
+
+--- Deletes a path and reports whether it succeeded.
+--- @param path string
+--- @return boolean, string|nil
+M.safe_delete = function(path)
+	local ok, result = pcall(vim.fn.delete, path, "rf")
+	if not ok then
+		return false, result
+	end
+
+	if result ~= 0 then
+		return false, string.format("could not delete '%s'", path)
+	end
+
+	return true, nil
+end
+
+--- Renames a path and reports whether it succeeded.
+--- @param from string
+--- @param to string
+--- @return boolean, string|nil
+M.safe_rename = function(from, to)
+	local ok, result, err_name = pcall(vim.uv.fs_rename, from, to)
+	if not ok then
+		return false, result
+	end
+
+	if result then
+		return true, nil
+	end
+
+	return false, err_name or string.format("could not rename '%s' to '%s'", from, to)
+end
+
+--- Creates a temporary directory under a parent path.
+--- @param parent string
+--- @param prefix string
+--- @return string|nil, string|nil
+M.make_temp_dir = function(parent, prefix)
+	M.ensure_directory(parent)
+
+	local temp_name = string.format(".%s-%d-%d", prefix, vim.fn.getpid(), vim.uv.hrtime())
+	local temp_path = parent .. "/" .. temp_name
+	local ok, err = pcall(vim.fn.mkdir, temp_path, "p")
+	if not ok then
+		return nil, err
+	end
+
+	return temp_path, nil
 end
 
 local function normalize_markdown(md)
@@ -112,6 +185,30 @@ M.html_to_markdown = function(html)
 	end
 
 	return normalize_markdown(output)
+end
+
+--- Converts HTML to Markdown without blocking the Neovim UI.
+--- @param html string
+--- @param callback fun(ok: boolean, result: string)
+M.html_to_markdown_async = function(html, callback)
+	vim.system({
+		"pandoc",
+		"-f",
+		"html",
+		"-t",
+		"gfm-raw_html",
+		"--reference-links",
+		"--wrap=auto",
+		"--columns=100",
+		"--quiet",
+	}, { text = true, stdin = html }, vim.schedule_wrap(function(result)
+		if result.code ~= 0 then
+			callback(false, shell_error_message("pandoc html conversion", result))
+			return
+		end
+
+		callback(true, normalize_markdown(result.stdout or ""))
+	end))
 end
 
 return M

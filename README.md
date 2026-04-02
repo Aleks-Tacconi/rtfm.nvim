@@ -50,12 +50,16 @@ require("rtfm").setup({
 
 If `ensure_installed` is omitted, nothing is downloaded until `:RtfmInstall` is run.
 
+Adapter installs run in the background. Startup is not blocked, so docs may finish appearing shortly after Neovim loads.
+
 ## User Commands
 
 - `:RtfmInstall <adapter>`
 - `:RtfmUninstall <adapter>`
 
 The command argument is completed from registered adapters.
+
+If an install for the same adapter scope is already running, a second install request is rejected instead of overlapping.
 
 ## Registering Adapters
 

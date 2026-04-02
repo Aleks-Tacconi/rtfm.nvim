@@ -157,6 +157,30 @@ local function write_index(output_path, entries)
 	utils.write_file(output_path .. "/_index.md", table.concat(lines, "\n") .. "\n")
 end
 
+local function run_sequential(items, iterator, done)
+	local index = 1
+
+	local function step()
+		local item = items[index]
+		if not item then
+			done(true)
+			return
+		end
+
+		iterator(item, index, function(ok, err)
+			if not ok then
+				done(false, err)
+				return
+			end
+
+			index = index + 1
+			step()
+		end)
+	end
+
+	step()
+end
+
 --- @class CrawlerConfig
 --- @field url string: The URL to pull documentation from
 --- @field source_rules Rule[]: The chain of rules to discover documentation source links from the root URL page
@@ -209,63 +233,111 @@ end
 
 --- Fetches the root URL page, applies the source rules to discover documentation source links,
 --- and adds them to the crawler configuration
-function M:fetch()
+function M:fetch(done)
 	if #self.source_rules == 0 then
+		done(true)
 		return
 	end
 
-	local html = utils.curl(self.url)
-	if not html then
-		return
-	end
+	utils.curl_async(self.url, function(ok, result)
+		if not ok then
+			done(false, result)
+			return
+		end
 
-	local output = apply_rule_chain(html, self.source_rules)
+		local rules_ok, output = pcall(apply_rule_chain, result, self.source_rules)
+		if not rules_ok then
+			done(false, output)
+			return
+		end
 
-	for _, source in ipairs(output) do
-		self:add_source(source)
-	end
+		for _, source in ipairs(output) do
+			self:add_source(source)
+		end
+
+		done(true)
+	end)
 end
 
 --- Fetches a documentation source, splits it into sections, derives stable names from name_rule,
 --- and writes the sections under source_name/normalized_name.md.
 --- @param source string: The URL of the documentation source to fetch
 --- @param output_path string: The directory path to store the fetched documentation sections in
-function M:fetch_documentation(source, output_path)
-	local html = utils.curl(source)
-	if not html then
-		return
-	end
-
-	local sections = #self.documentation_rules > 0 and apply_rule_chain(html, self.documentation_rules) or { html }
-	local source_key = source_name(source):gsub("%.", "/")
-
-	for index, section in ipairs(sections) do
-		local ctx = section_context(source, section, index)
-		local section_name = derive_section_name(section, self.name_rule)
-		if not section_name then
-			error(string.format("could not derive section name for '%s' section %d", source, index))
+function M:fetch_documentation(source, output_path, done)
+	utils.curl_async(source, function(ok, result)
+		if not ok then
+			done(false, result)
+			return
 		end
 
-		local normalized_name = normalize_section_name(ctx.source_name, section_name)
-		if not normalized_name then
-			error(string.format("invalid normalized section name '%s' for '%s'", section_name, source))
+		local sections = { result }
+		if #self.documentation_rules > 0 then
+			local rules_ok, rules_or_err = pcall(apply_rule_chain, result, self.documentation_rules)
+			if not rules_ok then
+				done(false, rules_or_err)
+				return
+			end
+
+			sections = rules_or_err
 		end
 
-		local relative_path = path_utils.normalize(string.format("%s/%s", source_key, normalized_name))
-		local file_path = output_path .. "/" .. relative_path .. ".md"
-		utils.write_file(file_path, utils.html_to_markdown(section))
-		register_index_entry(self._index_entries, relative_path, ctx)
-	end
+		local source_key = source_name(source):gsub("%.", "/")
+
+		run_sequential(sections, function(section, index, next_section)
+			local ctx = section_context(source, section, index)
+			local section_name = derive_section_name(section, self.name_rule)
+			if not section_name then
+				next_section(false, string.format("could not derive section name for '%s' section %d", source, index))
+				return
+			end
+
+			local normalized_name = normalize_section_name(ctx.source_name, section_name)
+			if not normalized_name then
+				next_section(false, string.format("invalid normalized section name '%s' for '%s'", section_name, source))
+				return
+			end
+
+			local relative_path = path_utils.normalize(string.format("%s/%s", source_key, normalized_name))
+			local file_path = output_path .. "/" .. relative_path .. ".md"
+
+			utils.html_to_markdown_async(section, function(markdown_ok, markdown_or_err)
+				if not markdown_ok then
+					next_section(false, markdown_or_err)
+					return
+				end
+
+				local write_ok, write_err = pcall(utils.write_file, file_path, markdown_or_err)
+				if not write_ok then
+					next_section(false, write_err)
+					return
+				end
+
+				register_index_entry(self._index_entries, relative_path, ctx)
+				next_section(true)
+			end)
+		end, done)
+	end)
 end
 
 --- Fetches the documentation from all collected source URLs and stores them under output_path.
 --- @param output_path string: The directory path to store the fetched documentation sections in
-function M:fetch_all_documentation(output_path)
-	for _, source in ipairs(self.sources) do
-		self:fetch_documentation(source, output_path)
-	end
+function M:fetch_all_documentation(output_path, done)
+	run_sequential(self.sources, function(source, _, next_source)
+		self:fetch_documentation(source, output_path, next_source)
+	end, function(ok, err)
+		if not ok then
+			done(false, err)
+			return
+		end
 
-	write_index(output_path, self._index_entries)
+		local write_ok, write_err = pcall(write_index, output_path, self._index_entries)
+		if not write_ok then
+			done(false, write_err)
+			return
+		end
+
+		done(true)
+	end)
 end
 
 return M

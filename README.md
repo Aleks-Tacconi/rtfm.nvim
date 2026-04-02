@@ -39,6 +39,7 @@ Generate and store local markdown docs for languages/frameworks via pluggable ad
 
 - `curl`
 - `pandoc` (required for HTML -> Markdown conversion)
+- `telescope.nvim` (required for `:RtfmBrowse`)
 
 ## Setup
 
@@ -52,14 +53,29 @@ If `ensure_installed` is omitted, nothing is downloaded until `:RtfmInstall` is 
 
 Adapter installs run in the background. Startup is not blocked, so docs may finish appearing shortly after Neovim loads.
 
+You can bind the browse and viewer commands in your own config:
+
+```lua
+vim.keymap.set("n", "<leader>rb", "<cmd>RtfmBrowse<cr>")
+vim.keymap.set("n", "]d", "<cmd>RtfmDocNext<cr>")
+vim.keymap.set("n", "[d", "<cmd>RtfmDocPrev<cr>")
+```
+
 ## User Commands
 
 - `:RtfmInstall <adapter>`
 - `:RtfmUninstall <adapter>`
+- `:RtfmBrowse`
+- `:RtfmDocNext`
+- `:RtfmDocPrev`
 
 The command argument is completed from registered adapters.
 
 If an install for the same adapter scope is already running, a second install request is rejected instead of overlapping.
+
+`:RtfmBrowse` uses Telescope to traverse adapter -> scope -> source -> doc. Scope ordering is read from the generated `_index.md`, and the selected doc opens in a dedicated viewer buffer with a floating previous/current/next overlay.
+
+If a scope has no `_index.md`, browsing that scope fails with a message telling you to run `:RtfmInstall <adapter>` first.
 
 ## Registering Adapters
 

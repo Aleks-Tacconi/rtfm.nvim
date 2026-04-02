@@ -1,5 +1,7 @@
 local utils = require("rtfm.utils")
 local Adapter = require("rtfm.abc-adapter.adapter")
+local Browser = require("rtfm.browser")
+local Viewer = require("rtfm.viewer")
 
 local M = {}
 
@@ -169,6 +171,30 @@ function M.uninstall_adapter(name)
 	return true
 end
 
+--- Opens the Telescope browser for installed docs.
+--- @return boolean
+function M.browse()
+	local ok, err = pcall(Browser.browse, M.adapters)
+	if not ok then
+		vim.notify(err, vim.log.levels.ERROR)
+		return false
+	end
+
+	return true
+end
+
+--- Jumps to the next doc in the active viewer.
+--- @return nil
+function M.next_doc()
+	Viewer.next()
+end
+
+--- Jumps to the previous doc in the active viewer.
+--- @return nil
+function M.prev_doc()
+	Viewer.prev()
+end
+
 local function create_user_commands()
 	vim.api.nvim_create_user_command("RtfmInstall", function(opts)
 		M.install_adapter(opts.args)
@@ -182,6 +208,24 @@ local function create_user_commands()
 	end, {
 		nargs = 1,
 		complete = complete_adapter_name,
+	})
+
+	vim.api.nvim_create_user_command("RtfmBrowse", function()
+		M.browse()
+	end, {
+		nargs = 0,
+	})
+
+	vim.api.nvim_create_user_command("RtfmDocNext", function()
+		M.next_doc()
+	end, {
+		nargs = 0,
+	})
+
+	vim.api.nvim_create_user_command("RtfmDocPrev", function()
+		M.prev_doc()
+	end, {
+		nargs = 0,
 	})
 end
 

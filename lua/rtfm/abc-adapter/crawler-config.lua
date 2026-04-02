@@ -185,11 +185,11 @@ local function run_sequential(items, iterator, done)
 			end
 
 			index = index + 1
-			step()
+			vim.schedule(step)
 		end)
 	end
 
-	step()
+	vim.schedule(step)
 end
 
 --- @class CrawlerConfig

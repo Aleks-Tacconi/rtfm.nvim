@@ -3,8 +3,6 @@ local Adapter = require("rtfm.abc-adapter.adapter")
 local Browser = require("rtfm.browser")
 local Viewer = require("rtfm.viewer")
 
-local notify_backend = require("notify")
-
 local M = {}
 
 M.adapters = {
@@ -13,9 +11,6 @@ M.adapters = {
 
 M.ensure_installed = {}
 M._active_installs = {}
-M._install_notifications = {}
-
-local SPINNER_FRAMES = { "-", "\\", "|", "/" }
 
 local function adapter_names()
 	local names = {}
@@ -49,87 +44,7 @@ local function notify(message, level, should_notify, opts)
 		return
 	end
 
-	return notify_backend(message, level, opts or {})
-end
-
-local function spinner_frame(state)
-	local elapsed_ms = (vim.uv.hrtime() - state.started_at) / 1000000
-	local frame_index = math.floor(elapsed_ms / state.interval_ms) % #SPINNER_FRAMES + 1
-	return SPINNER_FRAMES[frame_index]
-end
-
-local function spinner_elapsed(state)
-	local elapsed_ms = (vim.uv.hrtime() - state.started_at) / 1000000
-	return string.format("%.1fs", elapsed_ms / 1000)
-end
-
-local function spinner_message(state)
-	return string.format("%s %s (%s)", spinner_frame(state), state.message, spinner_elapsed(state))
-end
-
-local function render_install_notification(state, level)
-	if not state then
-		return
-	end
-
-	state.notification = notify(spinner_message(state), level or vim.log.levels.INFO, true, {
-		title = "rtfm.nvim",
-		replace = state.notification,
-	}) or state.notification
-end
-
-local function start_install_notification(name, should_notify)
-	if should_notify == false then
-		return nil
-	end
-
-	local state = {
-		name = name,
-		message = string.format("Installing '%s'...", name),
-		started_at = vim.uv.hrtime(),
-		interval_ms = 80,
-		notification = nil,
-		timer = nil,
-	}
-
-	render_install_notification(state)
-
-	state.timer = vim.uv.new_timer()
-	if state.timer then
-		state.timer:start(state.interval_ms, state.interval_ms, vim.schedule_wrap(function()
-			render_install_notification(state)
-		end))
-	end
-
-	M._install_notifications[name] = state
-	return state
-end
-
-local function update_install_notification(state, message)
-	if not state then
-		return
-	end
-
-	state.message = message
-	render_install_notification(state)
-end
-
-local function stop_install_notification(state, message, level)
-	if not state then
-		return
-	end
-
-	if state.timer then
-		state.timer:stop()
-		state.timer:close()
-		state.timer = nil
-	end
-
-	state.notification = notify(message, level, true, {
-		title = "rtfm.nvim",
-		replace = state.notification,
-	}) or state.notification
-	M._install_notifications[state.name] = nil
+	return vim.notify(message, level, opts or {})
 end
 
 local function scope_lock_key(adapter, scope)
@@ -183,7 +98,7 @@ local function run_scopes(adapter, scopes, opts, done)
 			return
 		end
 
-		update_install_notification(opts.notification, string.format("Installing '%s' %s (%d/%d)", adapter.doc, scope.dir, index, #scopes))
+		notify(string.format("Installing '%s' %s (%d/%d)", adapter.doc, scope.dir, index, #scopes), vim.log.levels.INFO, opts.notify)
 		adapter[scope.method](adapter, function(ok, err)
 			if not ok then
 				done(false, err)
@@ -191,11 +106,11 @@ local function run_scopes(adapter, scopes, opts, done)
 			end
 
 			index = index + 1
-			step()
+			vim.schedule(step)
 		end)
 	end
 
-	step()
+	vim.schedule(step)
 end
 
 function M.register_adapter(name, module_path)
@@ -227,20 +142,20 @@ function M.install_adapter(name, opts)
 		return false
 	end
 
-	local notification = start_install_notification(name, notify_enabled)
+	notify(string.format("Installing '%s' in background...", name), vim.log.levels.INFO, notify_enabled)
 
-	run_scopes(adapter, enabled_scopes(adapter), { notify = notify_enabled, notification = notification }, function(install_ok, install_err)
+	run_scopes(adapter, enabled_scopes(adapter), { notify = notify_enabled }, function(install_ok, install_err)
 		release_scope_locks(locks)
 
 		if not install_ok then
-			stop_install_notification(notification, install_err, vim.log.levels.ERROR)
+			notify(install_err, vim.log.levels.ERROR, notify_enabled)
 			if opts.on_done then
 				opts.on_done(false, install_err)
 			end
 			return
 		end
 
-		stop_install_notification(notification, string.format("Installed '%s'", name), vim.log.levels.INFO)
+		notify(string.format("Installed '%s'", name), vim.log.levels.INFO, notify_enabled)
 		if opts.on_done then
 			opts.on_done(true)
 		end
@@ -282,7 +197,9 @@ end
 
 local function create_user_commands()
 	vim.api.nvim_create_user_command("RtfmInstall", function(opts)
-		M.install_adapter(opts.args)
+		vim.schedule(function()
+			M.install_adapter(opts.args)
+		end)
 	end, {
 		nargs = 1,
 		complete = complete_adapter_name,

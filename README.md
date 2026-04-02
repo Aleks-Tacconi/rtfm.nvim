@@ -39,8 +39,8 @@ Generate and store local markdown docs for languages/frameworks via pluggable ad
 
 - `curl`
 - `pandoc` (required for HTML -> Markdown conversion)
+- `Nerd Font` (optional, for viewer icons)
 - `telescope.nvim` (required for `:RtfmBrowse`)
-- `nvim-notify` (required for all plugin notifications and install progress)
 
 ## Setup
 
@@ -54,7 +54,7 @@ If `ensure_installed` is omitted, nothing is downloaded until `:RtfmInstall` is 
 
 Adapter installs run in the background. Startup is not blocked, so docs may finish appearing shortly after Neovim loads.
 
-Background installs keep a live notification spinner active while docs are downloading and converting.
+Background installs show simple progress notifications while docs are downloading and converting.
 
 You can bind the browse and viewer commands in your own config:
 

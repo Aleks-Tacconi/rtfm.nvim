@@ -40,6 +40,7 @@ Generate and store local markdown docs for languages/frameworks via pluggable ad
 - `curl`
 - `pandoc` (required for HTML -> Markdown conversion)
 - `telescope.nvim` (required for `:RtfmBrowse`)
+- `nvim-notify` (required for all plugin notifications and install progress)
 
 ## Setup
 

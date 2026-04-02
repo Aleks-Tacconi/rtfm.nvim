@@ -3,6 +3,8 @@ local Adapter = require("rtfm.abc-adapter.adapter")
 local Browser = require("rtfm.browser")
 local Viewer = require("rtfm.viewer")
 
+local notify_backend = require("notify")
+
 local M = {}
 
 M.adapters = {
@@ -47,7 +49,7 @@ local function notify(message, level, should_notify, opts)
 		return
 	end
 
-	return vim.notify(message, level, opts or {})
+	return notify_backend(message, level, opts or {})
 end
 
 local function spinner_frame(state)

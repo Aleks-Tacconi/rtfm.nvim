@@ -50,9 +50,30 @@ local function notify(message, level, should_notify, opts)
 	return vim.notify(message, level, opts or {})
 end
 
+local function spinner_frame(state)
+	local elapsed_ms = (vim.uv.hrtime() - state.started_at) / 1000000
+	local frame_index = math.floor(elapsed_ms / state.interval_ms) % #SPINNER_FRAMES + 1
+	return SPINNER_FRAMES[frame_index]
+end
+
+local function spinner_elapsed(state)
+	local elapsed_ms = (vim.uv.hrtime() - state.started_at) / 1000000
+	return string.format("%.1fs", elapsed_ms / 1000)
+end
+
 local function spinner_message(state)
-	local frame = SPINNER_FRAMES[state.frame_index]
-	return string.format("%s %s", frame, state.message)
+	return string.format("%s %s (%s)", spinner_frame(state), state.message, spinner_elapsed(state))
+end
+
+local function render_install_notification(state, level)
+	if not state then
+		return
+	end
+
+	state.notification = notify(spinner_message(state), level or vim.log.levels.INFO, true, {
+		title = "rtfm.nvim",
+		replace = state.notification,
+	}) or state.notification
 end
 
 local function start_install_notification(name, should_notify)
@@ -63,23 +84,18 @@ local function start_install_notification(name, should_notify)
 	local state = {
 		name = name,
 		message = string.format("Installing '%s'...", name),
-		frame_index = 1,
+		started_at = vim.uv.hrtime(),
+		interval_ms = 80,
 		notification = nil,
 		timer = nil,
 	}
 
-	state.notification = notify(spinner_message(state), vim.log.levels.INFO, true, {
-		title = "rtfm.nvim",
-	})
+	render_install_notification(state)
 
 	state.timer = vim.uv.new_timer()
 	if state.timer then
-		state.timer:start(120, 120, vim.schedule_wrap(function()
-			state.frame_index = (state.frame_index % #SPINNER_FRAMES) + 1
-			state.notification = notify(spinner_message(state), vim.log.levels.INFO, true, {
-				title = "rtfm.nvim",
-				replace = state.notification,
-			}) or state.notification
+		state.timer:start(state.interval_ms, state.interval_ms, vim.schedule_wrap(function()
+			render_install_notification(state)
 		end))
 	end
 
@@ -93,10 +109,7 @@ local function update_install_notification(state, message)
 	end
 
 	state.message = message
-	state.notification = notify(spinner_message(state), vim.log.levels.INFO, true, {
-		title = "rtfm.nvim",
-		replace = state.notification,
-	}) or state.notification
+	render_install_notification(state)
 end
 
 local function stop_install_notification(state, message, level)

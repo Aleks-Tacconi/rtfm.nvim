@@ -70,6 +70,17 @@ local function derive_section_name(section, rule)
 	local output = rule:apply(section)
 	local name = output and output[1]
 	if not name or name == "" then
+		local fallback_id = section:match(' id="([^"]+)"') or section:match(" id='([^']+)'")
+		if fallback_id and fallback_id ~= "" then
+			return vim.trim(fallback_id)
+		end
+
+		local desc_class = section:match('<span class="sig%-prename descclassname"><span class="pre">(.-)</span></span>')
+		local desc_name = section:match('<span class="sig%-name descname"><span class="pre">(.-)</span></span>')
+		if desc_name and desc_name ~= "" then
+			return vim.trim((desc_class or "") .. desc_name)
+		end
+
 		return nil
 	end
 

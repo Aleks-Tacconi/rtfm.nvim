@@ -9,21 +9,21 @@
 
 <div align="center">
 
-<img src="https://img.shields.io/badge/Lua-2C2D72?style=for-the-badge&logo=lua&logoColor=white" alt="Lua" />
-&nbsp;&nbsp;
-<img src="https://img.shields.io/badge/Neovim-57A143?style=for-the-badge&logo=neovim&logoColor=white" alt="Neovim" />
-&nbsp;&nbsp;
-<img src="https://img.shields.io/badge/Markdown-000000?style=for-the-badge&logo=markdown&logoColor=white" alt="Markdown" />
-&nbsp;&nbsp;
-<img src="https://img.shields.io/badge/Offline%20Docs-3B3B3B?style=for-the-badge&logo=bookstack&logoColor=white" alt="Offline Docs" />
-&nbsp;&nbsp;
-<img src="https://img.shields.io/badge/Adapters-5C4EE5?style=for-the-badge&logo=socketdotio&logoColor=white" alt="Adapters" />
+<strong>Offline docs for Neovim.</strong>
 
 </div>
 
 <div align="center">
 
-Offline documentation for Neovim.
+<img src="https://img.shields.io/badge/Lua-2C2D72?style=flat-square&logo=lua&logoColor=white" alt="Lua" />
+&nbsp;&nbsp;
+<img src="https://img.shields.io/badge/Neovim-57A143?style=flat-square&logo=neovim&logoColor=white" alt="Neovim" />
+&nbsp;&nbsp;
+<img src="https://img.shields.io/badge/Markdown-2F333A?style=flat-square&logo=markdown&logoColor=white" alt="Markdown" />
+&nbsp;&nbsp;
+<img src="https://img.shields.io/badge/Offline-3A4A3F?style=flat-square&logo=bookstack&logoColor=white" alt="Offline" />
+&nbsp;&nbsp;
+<img src="https://img.shields.io/badge/Adapters-3F7A32?style=flat-square&logo=socketdotio&logoColor=white" alt="Adapters" />
 
 </div>
 

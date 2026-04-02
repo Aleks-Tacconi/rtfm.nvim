@@ -15,6 +15,8 @@ require("local-docs").setup({
 })
 ```
 
+If `ensure_installed` is omitted, nothing is downloaded until `:LocalDocsInstall` is run.
+
 ## User Commands
 
 - `:LocalDocsInstall <adapter>`
@@ -54,14 +56,12 @@ return Adapter.define({
 			"https://example.com/docs/intro.html",
 			"https://example.com/docs/functions.html",
 		},
-		source_rules = {
-			Rule.tag("a"),
-			Rule.attr("href"),
-		},
 		documentation_rules = {
 			Rule.tag("section"),
 		},
-		name_rule = Rule.regex([[<section id="\zs[^"]\+\ze"]]),
+		path_mapper = function(ctx)
+			return ctx.source_name .. "/" .. ctx.section_id
+		end,
 	},
 })
 ```
@@ -76,8 +76,22 @@ Crawler spec:
 - `url` (required): root docs URL
 - `seed_sources` (optional): additional full `https://...` source URLs to include
 - `source_rules` (optional): rule chain for extracting source URLs from `url` (if empty, discovery is skipped)
-- `documentation_rules` (optional): rule chain for extracting doc sections
-- `name_rule` (optional): rule to derive output file names from sections
+- `documentation_rules` (required): rule chain for extracting doc sections
+- `path_mapper` (required): function receiving `ctx` and returning a relative output path without `.md`
+
+`path_mapper(ctx)` receives:
+
+- `ctx.source_url`: source page URL
+- `ctx.source_path`: source page path, such as `/docs/functions.html`
+- `ctx.source_name`: source page basename without `.html`
+- `ctx.section_html`: raw HTML for the extracted section
+- `ctx.section_index`: 1-based section index within the page
+- `ctx.section_id`: first `id="..."` found in the extracted section
+- `ctx.heading_text`: first heading text found in the extracted section
+
+`path_mapper` is the only output naming mechanism. It must return a non-empty relative path like `os/system`.
+
+Generated markdown is wrapped for terminal readability, and each output directory also gets a numbered `_index.md` file that preserves extraction order.
 
 ## Output Layout
 
@@ -86,7 +100,12 @@ Docs are written under `stdpath("data") .. "/local-docs/"`, typically:
 ```text
 <data>/local-docs/
   python/
-    builtin/
-    stdlib/
-    misc/
+	  builtin/
+		introduction/introduction.md
+		introduction/_index.md
+		compound_stmts/if.md
+	  stdlib/
+		os/system.md
+		os/_index.md
+	  misc/
 ```

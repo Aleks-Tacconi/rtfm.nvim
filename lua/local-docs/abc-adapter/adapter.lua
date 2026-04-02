@@ -1,4 +1,5 @@
 local CrawlerConfig = require("local-docs.abc-adapter.crawler-config")
+local Contract = require("local-docs.abc-adapter.contract")
 local utils = require("local-docs.utils")
 
 --- @class Adapter
@@ -27,9 +28,9 @@ end
 function M:_run_scope(scope_dir, crawler_spec)
 	local crawler = CrawlerConfig:new(crawler_spec)
 
-	crawler:fetch()
-
 	local path = utils.data_dir .. self.doc .. "/" .. scope_dir .. "/"
+	vim.fn.delete(path, "rf")
+	crawler:fetch()
 	crawler:fetch_all_documentation(path)
 end
 
@@ -60,6 +61,8 @@ end
 --- @param spec AdapterSpec
 --- @return Adapter
 function M.define(spec)
+	Contract.validate(spec)
+
 	local adapter = {
 		doc = spec.doc,
 		spec = spec,

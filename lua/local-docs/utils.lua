@@ -67,7 +67,8 @@ M.html_to_markdown = function(html)
 		"html",
 		"-t",
 		"gfm-raw_html",
-		"--wrap=none",
+		"--wrap=auto",
+		"--columns=100",
 		"--quiet",
 	}, html)
 

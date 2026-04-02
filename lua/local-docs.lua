@@ -29,6 +29,10 @@ local function complete_adapter_name(arg_lead)
 end
 
 local function load_adapter(name)
+	if not M.adapters[name] then
+		error(string.format("unknown adapter '%s'", name))
+	end
+
 	return require(M.adapters[name])
 end
 
@@ -37,12 +41,28 @@ function M.register_adapter(name, module_path)
 end
 
 function M.install_adapter(name)
-	local adapter = load_adapter(name):new()
+	local ok, adapter_or_err = pcall(function()
+		return load_adapter(name):new()
+	end)
 
-	for _, scope in ipairs(Adapter.SCOPES) do
-		if adapter.spec[scope.spec_key] then
-			adapter[scope.method](adapter)
+	if not ok then
+		vim.notify(adapter_or_err, vim.log.levels.ERROR)
+		return false
+	end
+
+	local adapter = adapter_or_err
+
+	local install_ok, install_err = pcall(function()
+		for _, scope in ipairs(Adapter.SCOPES) do
+			if adapter.spec[scope.spec_key] then
+				adapter[scope.method](adapter)
+			end
 		end
+	end)
+
+	if not install_ok then
+		vim.notify(install_err, vim.log.levels.ERROR)
+		return false
 	end
 
 	vim.notify(string.format("Installed '%s'", name), vim.log.levels.INFO)

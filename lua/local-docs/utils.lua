@@ -43,6 +43,12 @@ M.write_file = function(path, content)
 end
 
 local function normalize_markdown(md)
+	local previous = nil
+	while md ~= previous do
+		previous = md
+		md = md:gsub("`([^`\n]-)``%s*``([^`\n]-)`", "`%1 %2`")
+	end
+
 	local lines = vim.split(md, "\n", { plain = true, trimempty = false })
 	local in_code_block = false
 
@@ -53,33 +59,33 @@ local function normalize_markdown(md)
 			end
 			in_code_block = not in_code_block
 		elseif not in_code_block then
-			if line:match("^%s*%[[^%]]-%]:%s*.-$") or line:match("^%s*$") then
+			if line:match("^%s*%[[^%]]-%]:%s*[^\n]*$") or line:match("^%s*$") then
 				lines[i] = ""
 			else
-			line = line:gsub("%[¶%]%([^\n]-%)", "")
-			line = line:gsub("%[([^%[%]]-)%]%([^\n]-%)", "%1")
-			line = line:gsub("%[([^%[%]]-)%]%[[^%]]-%]", "%1")
-			line = line:gsub("%[([^%[%]]-)%]", "%1")
-			line = line:gsub("¶", "")
-
-			local previous = nil
-			while line ~= previous do
-				previous = line
-				line = line:gsub("`([^`\n]-)``%s*``([^`\n]-)`", "`%1 %2`")
-			end
-
-			if line:match("^%s*$") then
-				lines[i] = ""
-			else
+				line = line:gsub("%[¶%]%[[^%]]-%]", "")
+				line = line:gsub("%[¶%]%([^\n]-%)", "")
+				line = line:gsub("%[([^%[%]]-)%]%([^\n]-%)", "%1")
+				line = line:gsub("%[([^%[%]]-)%]%[[^%]]-%]", "%1")
+				line = line:gsub("%[(`[^%]]-`)%]", "%1")
+				line = line:gsub("%[([%*`%a][^%[%]]-)%]", "%1")
+				line = line:gsub("%[%]", "")
+				line = line:gsub("\\%[%[%d+%]\\%]", "")
+				line = line:gsub("&nbsp;", "")
+				line = line:gsub("¶", "")
 				lines[i] = line
 			end
-			end
-		elseif line == "``` highlight" then
-			lines[i] = "```text"
 		end
 	end
 
 	local normalized = table.concat(lines, "\n")
+	previous = nil
+	while normalized ~= previous do
+		previous = normalized
+		normalized = normalized:gsub("%[(.-)\n%s*(.-)%]%(([^)\n]-)%)", "%1 %2")
+		normalized = normalized:gsub("%[(.-)\n%s*(.-)%]%[([^%]\n]-)%]", "%1 %2")
+		normalized = normalized:gsub("%[([^%]\n]-)\n%s*([^%]\n]-)%]", "%1 %2")
+	end
+	normalized = normalized:gsub("%[%]", "")
 	normalized = normalized:gsub("\n\n\n+", "\n\n")
 	return vim.trim(normalized) .. "\n"
 end

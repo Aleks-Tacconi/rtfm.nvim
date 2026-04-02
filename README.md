@@ -9,7 +9,7 @@
 
 <div align="center">
 
-<strong>Offline docs for Neovim.</strong>
+<strong>Read The Friendly Manual ● Download and search through official documentation ● Standardized documentation format for every framework</strong>
 
 </div>
 
@@ -33,6 +33,7 @@
 ## About
 
 Generate and store local markdown docs for languages/frameworks via pluggable adapters.
+...
 
 ## Requirements
 

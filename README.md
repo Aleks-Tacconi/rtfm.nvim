@@ -53,6 +53,8 @@ If `ensure_installed` is omitted, nothing is downloaded until `:RtfmInstall` is 
 
 Adapter installs run in the background. Startup is not blocked, so docs may finish appearing shortly after Neovim loads.
 
+Background installs keep a live notification spinner active while docs are downloading and converting.
+
 You can bind the browse and viewer commands in your own config:
 
 ```lua

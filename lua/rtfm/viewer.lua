@@ -45,9 +45,9 @@ local function current_entry()
 	return M.session.entries[M.session.index]
 end
 
---- Builds the overlay text for the active session.
+--- Builds the status text for the active session.
 --- @return string[]
-local function overlay_lines()
+local function status_lines()
 	local entry = current_entry()
 	if not entry then
 		return {}
@@ -63,23 +63,21 @@ local function overlay_lines()
 	}
 end
 
---- Ensures the floating overlay exists for the current viewer window.
+--- Ensures the bottom status window exists for the current viewer window.
 --- @return nil
-local function render_overlay()
+local function render_status()
 	if not has_active_session() then
 		return
 	end
 
-	local lines = overlay_lines()
-	local width = 0
-	for _, line in ipairs(lines) do
-		width = math.max(width, vim.fn.strdisplaywidth(line))
-	end
+	local lines = status_lines()
 
 	local overlay_buf = M.session.overlay_buf
 	if not overlay_buf or not vim.api.nvim_buf_is_valid(overlay_buf) then
 		overlay_buf = vim.api.nvim_create_buf(false, true)
 		vim.bo[overlay_buf].bufhidden = "wipe"
+		vim.bo[overlay_buf].buftype = "nofile"
+		vim.bo[overlay_buf].swapfile = false
 		M.session.overlay_buf = overlay_buf
 	end
 
@@ -87,25 +85,29 @@ local function render_overlay()
 	vim.api.nvim_buf_set_lines(overlay_buf, 0, -1, false, lines)
 	vim.bo[overlay_buf].modifiable = false
 
-	local config = {
-		relative = "win",
-		win = M.session.winnr,
-		row = 1,
-		col = math.max(0, vim.api.nvim_win_get_width(M.session.winnr) - width - 4),
-		width = math.max(width + 2, 16),
-		height = #lines,
-		style = "minimal",
-		border = "rounded",
-		focusable = false,
-		zindex = 90,
-	}
-
 	if M.session.overlay_win and vim.api.nvim_win_is_valid(M.session.overlay_win) then
-		vim.api.nvim_win_set_config(M.session.overlay_win, config)
+		if vim.api.nvim_win_get_buf(M.session.overlay_win) ~= overlay_buf then
+			vim.api.nvim_win_set_buf(M.session.overlay_win, overlay_buf)
+		end
 	else
-		M.session.overlay_win = vim.api.nvim_open_win(overlay_buf, false, config)
-		vim.wo[M.session.overlay_win].winhl = "Normal:NormalFloat,FloatBorder:FloatBorder"
+		local current_win = vim.api.nvim_get_current_win()
+		vim.api.nvim_set_current_win(M.session.winnr)
+		vim.cmd("belowright split")
+		M.session.overlay_win = vim.api.nvim_get_current_win()
+		vim.api.nvim_win_set_buf(M.session.overlay_win, overlay_buf)
+		vim.api.nvim_set_current_win(current_win)
 	end
+
+	vim.api.nvim_win_set_height(M.session.overlay_win, #lines)
+	vim.wo[M.session.overlay_win].winfixheight = true
+	vim.wo[M.session.overlay_win].number = false
+	vim.wo[M.session.overlay_win].relativenumber = false
+	vim.wo[M.session.overlay_win].signcolumn = "no"
+	vim.wo[M.session.overlay_win].foldcolumn = "0"
+	vim.wo[M.session.overlay_win].spell = false
+	vim.wo[M.session.overlay_win].wrap = false
+	vim.wo[M.session.overlay_win].cursorline = false
+	vim.wo[M.session.overlay_win].winhl = "Normal:NormalFloat"
 	vim.api.nvim_buf_set_name(overlay_buf, string.format("rtfm://overlay/%s/%s", M.session.adapter, M.session.scope))
 end
 
@@ -144,10 +146,10 @@ local function show_entry(index)
 	vim.bo[M.session.bufnr].modifiable = false
 	vim.api.nvim_buf_set_name(M.session.bufnr, string.format("rtfm://%s/%s/%s", M.session.adapter, M.session.scope, entry.relative_path))
 	vim.api.nvim_win_set_cursor(M.session.winnr, { 1, 0 })
-	render_overlay()
+	render_status()
 end
 
---- Clears any floating overlay associated with the viewer session.
+--- Clears any status window associated with the viewer session.
 --- @return nil
 local function clear_overlay()
 	if M.session and M.session.overlay_win and vim.api.nvim_win_is_valid(M.session.overlay_win) then
@@ -208,7 +210,7 @@ function M.open(context, entries, index)
 				return
 			end
 
-			render_overlay()
+			render_status()
 		end,
 	})
 

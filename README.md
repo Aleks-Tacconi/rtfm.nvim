@@ -7,7 +7,11 @@
 
 <div align="center">
 
-`Lua` `Neovim` `Markdown` `Offline Docs` `Adapters`
+<img src="https://img.shields.io/badge/Lua-2C2D72?style=flat-square&logo=lua&logoColor=white" alt="Lua" />
+<img src="https://img.shields.io/badge/Neovim-57A143?style=flat-square&logo=neovim&logoColor=white" alt="Neovim" />
+<img src="https://img.shields.io/badge/Markdown-000000?style=flat-square&logo=markdown&logoColor=white" alt="Markdown" />
+<img src="https://img.shields.io/badge/Offline%20Docs-3B3B3B?style=flat-square" alt="Offline Docs" />
+<img src="https://img.shields.io/badge/Adapters-5C4EE5?style=flat-square" alt="Adapters" />
 
 </div>
 

@@ -86,6 +86,7 @@ local function normalize_markdown(md)
 		normalized = normalized:gsub("%[([^%]\n]-)\n%s*([^%]\n]-)%]", "%1 %2")
 	end
 	normalized = normalized:gsub("%[%]", "")
+	normalized = normalized:gsub("\n([%-*+] [^\n]+)\n\n([%-*+] )", "\n%1\n%2")
 	normalized = normalized:gsub("\n\n\n+", "\n\n")
 	return vim.trim(normalized) .. "\n"
 end

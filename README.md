@@ -75,7 +75,9 @@ The command argument is completed from registered adapters.
 
 If an install for the same adapter scope is already running, a second install request is rejected instead of overlapping.
 
-`:RtfmBrowse` uses Telescope to traverse adapter -> scope -> source -> doc. Scope ordering is read from the generated `_index.md`, and the selected doc opens in a dedicated viewer buffer with a floating previous/current/next overlay.
+If source discovery or extraction returns no docs, the install now fails instead of replacing the scope with an empty result.
+
+`:RtfmBrowse` uses Telescope to traverse adapter -> scope -> source -> doc. Scope ordering is read from the generated `_index.md`, and the selected doc opens in a dedicated viewer buffer with a bottom status bar showing previous/current/next docs.
 
 If a scope has no `_index.md`, browsing that scope fails with a message telling you to run `:RtfmInstall <adapter>` first.
 

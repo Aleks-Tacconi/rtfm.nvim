@@ -255,6 +255,11 @@ function M:fetch(done)
 			self:add_source(source)
 		end
 
+		if #self.sources == 0 then
+			done(false, string.format("no documentation sources discovered for '%s'", self.url))
+			return
+		end
+
 		done(true)
 	end)
 end
@@ -322,11 +327,21 @@ end
 --- Fetches the documentation from all collected source URLs and stores them under output_path.
 --- @param output_path string: The directory path to store the fetched documentation sections in
 function M:fetch_all_documentation(output_path, done)
+	if #self.sources == 0 then
+		done(false, string.format("no documentation sources queued for '%s'", self.url))
+		return
+	end
+
 	run_sequential(self.sources, function(source, _, next_source)
 		self:fetch_documentation(source, output_path, next_source)
 	end, function(ok, err)
 		if not ok then
 			done(false, err)
+			return
+		end
+
+		if #self._index_entries == 0 then
+			done(false, string.format("no documentation entries extracted for '%s'", self.url))
 			return
 		end
 

@@ -29,7 +29,7 @@ return Adapter.define({
 	stdlib = {
 		url = STDLIB_URL,
 		source_rules = {
-			Rule.regex([[<li class="toctree%-l2"><a class="reference internal" href="\zs[^"#]\+\.html\ze"]]),
+			Rule.regex([[<li class="toctree-l2"><a class="reference internal" href="\zs[^"#]\+\.html\ze"]]),
 		},
 		documentation_rules = {
 			Rule.selector(".py"),

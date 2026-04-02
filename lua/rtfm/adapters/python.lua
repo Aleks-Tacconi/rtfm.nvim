@@ -32,7 +32,7 @@ return Adapter.define({
 			Rule.regex([[<li class="toctree-l2"><a class="reference internal" href="\zs[^"#]\+\.html\ze"]]),
 		},
 		documentation_rules = {
-			Rule.selector(".py"),
+			Rule.regex([[<dl class="py[^\"]*">\_.\{-}</dl>]]),
 		},
 		name_rule = Rule.regex([[ id="\zs[^"]\+\ze"]]),
 	},

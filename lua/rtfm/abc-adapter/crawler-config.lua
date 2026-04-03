@@ -232,6 +232,7 @@ function M:new(spec)
 		name_rule = spec.name_rule,
 		seed_sources = spec.seed_sources or {},
 		source_filter = spec.source_filter,
+		request_delay_ms = spec.request_delay_ms or 0,
 		dedupe_sources = spec.dedupe_sources ~= false,
 		sources = {},
 		_source_set = {},
@@ -245,6 +246,23 @@ function M:new(spec)
 	end
 
 	return instance
+end
+
+local function wait_for_request_delay(delay_ms)
+	if delay_ms <= 0 then
+		return
+	end
+
+	vim.wait(delay_ms)
+end
+
+local function defer_with_request_delay(delay_ms, callback)
+	if delay_ms <= 0 then
+		callback()
+		return
+	end
+
+	vim.defer_fn(callback, delay_ms)
 end
 
 --- Adds a source to the crawler configuration
@@ -325,7 +343,8 @@ end
 --- @param source string: The URL of the documentation source to fetch
 --- @param output_path string: The directory path to store the fetched documentation sections in
 function M:fetch_documentation(source, output_path, done)
-	utils.curl_async(source, function(ok, result)
+	defer_with_request_delay(self.request_delay_ms, function()
+		utils.curl_async(source, function(ok, result)
 		if not ok then
 			done(false, result)
 			return
@@ -377,6 +396,7 @@ function M:fetch_documentation(source, output_path, done)
 				next_section(true)
 			end)
 		end, done)
+		end)
 	end)
 end
 
@@ -385,6 +405,7 @@ end
 --- @param output_path string
 --- @return nil
 function M:fetch_documentation_sync(source, output_path)
+	wait_for_request_delay(self.request_delay_ms)
 	local html = utils.curl(source)
 	if not html then
 		error(string.format("could not fetch '%s'", source))

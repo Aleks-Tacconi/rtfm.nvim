@@ -29,6 +29,7 @@ return Adapter.define({
 	},
 	stdlib = {
 		url = STDLIB_URL,
+		request_delay_ms = 1200,
 		source_rules = {
 			Rule.regex([[href="\zs/\%(builtin\|std\|cmd/\)\@![^"?#@]\+\ze@go[0-9][^"]*"]]),
 		},

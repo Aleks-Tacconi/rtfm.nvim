@@ -2,6 +2,28 @@ local M = {}
 
 M.data_dir = vim.fn.stdpath("data") .. "/rtfm/"
 
+local CURL_BASE_ARGS = {
+	"curl",
+	"-fsSL",
+	"--retry",
+	"4",
+	"--retry-delay",
+	"1",
+	"--retry-all-errors",
+	"--connect-timeout",
+	"10",
+	"--max-time",
+	"60",
+	"-A",
+	"Mozilla/5.0 (compatible; rtfm.nvim)",
+}
+
+local function curl_command(url)
+	local cmd = vim.deepcopy(CURL_BASE_ARGS)
+	table.insert(cmd, url)
+	return cmd
+end
+
 local function shell_error_message(prefix, result)
 	local stderr = vim.trim(result.stderr or "")
 	if stderr == "" then
@@ -17,15 +39,7 @@ end
 --- @param save_file string|nil: Optional file path to save the fetched content
 --- @return string|nil: The fetched content if save_file is nil, otherwise nil
 M.curl = function(url, save_file)
-	local result = vim.system({
-		"curl",
-		"-fsSL",
-		"--connect-timeout",
-		"10",
-		"--max-time",
-		"60",
-		url,
-	}, { text = true }):wait(60000)
+	local result = vim.system(curl_command(url), { text = true }):wait(70000)
 
 	if result.code ~= 0 then
 		return nil
@@ -45,7 +59,7 @@ end
 --- @param url string
 --- @param callback fun(ok: boolean, result: string)
 M.curl_async = function(url, callback)
-	vim.system({ "curl", "-fsSL", url }, { text = true }, vim.schedule_wrap(function(result)
+	vim.system(curl_command(url), { text = true }, vim.schedule_wrap(function(result)
 		if result.code ~= 0 then
 			callback(false, shell_error_message(string.format("curl %s", url), result))
 			return

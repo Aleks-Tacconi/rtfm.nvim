@@ -64,6 +64,8 @@ return Adapter.define({
 | `url` | Yes | Root docs URL used for discovery. |
 | `seed_sources` | No | Additional full `https://...` source URLs to include before discovery runs. |
 | `source_rules` | No | Rule chain for extracting source URLs from `url`. If empty, discovery is skipped. |
+| `source_filter` | No | Function that receives each resolved source URL and returns `true` to keep it or `false` to skip it. |
+| `request_delay_ms` | No | Delay in milliseconds before fetching each source page. Useful for rate-limited doc sites. |
 | `documentation_rules` | Yes | Rule chain for extracting doc sections from each source page. |
 | `name_rule` | Yes | Rule that extracts the section name from each documentation fragment. |
 

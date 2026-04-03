@@ -12,7 +12,6 @@ M.adapters = {
 	python = "rtfm.adapters.python",
 }
 
-M.ensure_installed = {}
 M._active_installs = {}
 M.config = {
 	keymaps = {
@@ -359,7 +358,10 @@ end
 --- @return nil
 M.setup = function(opts)
 	opts = opts or {}
-	M.config = vim.tbl_deep_extend("force", M.config, opts)
+	M.config = vim.tbl_deep_extend("force", M.config, {
+		keymaps = opts.keymaps or {},
+		viewer = opts.viewer or {},
+	})
 	Viewer.configure(M.config.viewer)
 	apply_global_keymaps()
 
@@ -368,15 +370,7 @@ M.setup = function(opts)
 		vim.g.rtfm_commands_created = 1
 	end
 
-	M.ensure_installed = opts.ensure_installed or {}
-
 	utils.ensure_directory(utils.data_dir)
-
-	for _, name in ipairs(M.ensure_installed) do
-		vim.schedule(function()
-			M.install_adapter(name, { source = "startup" })
-		end)
-	end
 end
 
 return M

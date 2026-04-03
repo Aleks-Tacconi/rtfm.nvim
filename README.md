@@ -63,7 +63,6 @@ In the age of AI it is easy to ask ChatGPT for documentation, but that often ski
 	},
 	config = function()
 		require("rtfm").setup({
-			ensure_installed = { "python", "go" },
 			keymaps = {
 				manage = "<leader>rm",
 				browse = "<leader>rb",
@@ -78,8 +77,6 @@ In the age of AI it is easy to ask ChatGPT for documentation, but that often ski
 	end,
 }
 ```
-
-> If `ensure_installed` is omitted, nothing is downloaded until you install an adapter from `:RtfmManage`
 
 `setup().keymaps` configures the global mappings for `:RtfmManage` and `:RtfmBrowse`. Set either side to `false` or `""` to disable it.
 

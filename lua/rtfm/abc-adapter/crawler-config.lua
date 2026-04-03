@@ -231,6 +231,7 @@ function M:new(spec)
 		documentation_rules = spec.documentation_rules or {},
 		name_rule = spec.name_rule,
 		seed_sources = spec.seed_sources or {},
+		source_filter = spec.source_filter,
 		dedupe_sources = spec.dedupe_sources ~= false,
 		sources = {},
 		_source_set = {},
@@ -250,6 +251,9 @@ end
 --- @param source string: The URL of the documentation source to add
 function M:add_source(source)
 	local trimmed = vim.trim(resolve_source(self.url, source))
+	if self.source_filter and not self.source_filter(trimmed) then
+		return
+	end
 
 	if self.dedupe_sources and self._source_set[trimmed] then
 		return
@@ -444,13 +448,19 @@ end
 
 --- Fetches all queued documentation synchronously and writes the scope index.
 --- @param output_path string
+--- @param opts table|nil
 --- @return nil
-function M:fetch_all_documentation_sync(output_path)
+function M:fetch_all_documentation_sync(output_path, opts)
+	opts = opts or {}
 	if #self.sources == 0 then
 		error(string.format("no documentation sources queued for '%s'", self.url))
 	end
 
-	for _, source in ipairs(self.sources) do
+	for index, source in ipairs(self.sources) do
+		if opts.on_source then
+			opts.on_source(source, index, #self.sources)
+		end
+
 		self:fetch_documentation_sync(source, output_path)
 	end
 

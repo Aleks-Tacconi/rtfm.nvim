@@ -17,15 +17,21 @@ end
 --- @param save_file string|nil: Optional file path to save the fetched content
 --- @return string|nil: The fetched content if save_file is nil, otherwise nil
 M.curl = function(url, save_file)
-	local output = vim.fn.system({
+	local result = vim.system({
 		"curl",
 		"-fsSL",
+		"--connect-timeout",
+		"10",
+		"--max-time",
+		"60",
 		url,
-	})
+	}, { text = true }):wait(60000)
 
-	if vim.v.shell_error ~= 0 then
+	if result.code ~= 0 then
 		return nil
 	end
+
+	local output = result.stdout or ""
 
 	if save_file then
 		vim.fn.writefile(vim.split(output, "\n"), save_file)
@@ -168,7 +174,7 @@ end
 --- @param html string
 --- @return string
 M.html_to_markdown = function(html)
-	local output = vim.fn.system({
+	local result = vim.system({
 		"pandoc",
 		"-f",
 		"html",
@@ -178,13 +184,13 @@ M.html_to_markdown = function(html)
 		"--wrap=auto",
 		"--columns=100",
 		"--quiet",
-	}, html)
+	}, { text = true, stdin = html }):wait(120000)
 
-	if vim.v.shell_error ~= 0 then
+	if result.code ~= 0 then
 		error("pandoc failed converting html to markdown")
 	end
 
-	return normalize_markdown(output)
+	return normalize_markdown(result.stdout or "")
 end
 
 --- Converts HTML to Markdown without blocking the Neovim UI.

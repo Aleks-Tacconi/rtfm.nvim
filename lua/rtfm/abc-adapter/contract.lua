@@ -35,6 +35,10 @@ local function validate_scope(scope_name, scope)
 		validate_rules(scope_name, "source_rules", scope.source_rules)
 	end
 
+	if scope.source_filter ~= nil and type(scope.source_filter) ~= "function" then
+		error(string.format("adapter scope '%s' field 'source_filter' must be a function", scope_name))
+	end
+
 	if #scope.documentation_rules == 0 then
 		error(string.format("adapter scope '%s' requires at least one documentation rule", scope_name))
 	end

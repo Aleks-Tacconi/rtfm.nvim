@@ -15,6 +15,10 @@ M.adapters = {
 M.ensure_installed = {}
 M._active_installs = {}
 M.config = {
+	keymaps = {
+		manage = "<leader>rm",
+		browse = "<leader>rb",
+	},
 	viewer = {
 		keymaps = {
 			prev = "[d",
@@ -80,13 +84,19 @@ local function enabled_scopes(adapter)
 	return scopes
 end
 
-local function run_scopes_sync(adapter, scopes, on_scope)
+local function run_scopes_sync(adapter, scopes, on_scope, on_source)
 	for index, scope in ipairs(scopes) do
 		if on_scope then
 			on_scope(scope, index, #scopes)
 		end
 
-		adapter[scope.method .. "_sync"](adapter)
+		adapter[scope.method .. "_sync"](adapter, {
+			on_source = function(source, source_index, source_total)
+				if on_source then
+					on_source(scope, index, #scopes, source, source_index, source_total)
+				end
+			end,
+		})
 	end
 end
 
@@ -119,7 +129,7 @@ function M.register_adapter(name, module_path)
 	M.adapters[name] = module_path
 end
 
-local function progress_lines(adapter_name, scopes, active_index, active_status)
+local function progress_lines(adapter_name, scopes, active_index, active_status, detail)
 	local lines = {
 		string.format(" 󰈔  Adapter  %s", adapter_name),
 		"",
@@ -136,6 +146,11 @@ local function progress_lines(adapter_name, scopes, active_index, active_status)
 		table.insert(lines, string.format(" %s  %s", status, scope.dir))
 	end
 
+	if detail and detail ~= "" then
+		table.insert(lines, "")
+		table.insert(lines, " " .. detail)
+	end
+
 	return lines
 end
 
@@ -147,17 +162,22 @@ local function install_adapter_modal(name)
 	end
 
 	local scopes = enabled_scopes(adapter)
+	local detail = nil
 	Progress.open(string.format(" 󰑐  Installing %s", name))
-	Progress.set_lines(progress_lines(name, scopes, 1, "running"))
+	Progress.set_lines(progress_lines(name, scopes, 1, "running", detail))
 
 	local ok, err = xpcall(function()
 		run_scopes_sync(adapter, scopes, function(scope, index)
-			Progress.set_lines(progress_lines(name, scopes, index, "running"))
+			detail = nil
+			Progress.set_lines(progress_lines(name, scopes, index, "running", detail))
+		end, function(scope, index, _, source, source_index, source_total)
+			detail = string.format("package %d/%d  %s", source_index, source_total, source)
+			Progress.set_lines(progress_lines(name, scopes, index, "running", detail))
 		end)
 	end, debug.traceback)
 
 	if ok then
-		Progress.set_lines(progress_lines(name, scopes, #scopes + 1, "done"))
+		Progress.set_lines(progress_lines(name, scopes, #scopes + 1, "done", nil))
 	end
 
 	Progress.close()
@@ -289,6 +309,21 @@ function M.prev_doc()
 	Viewer.prev()
 end
 
+--- Applies configured global keymaps.
+--- @return nil
+local function apply_global_keymaps()
+	local manage = M.config.keymaps.manage
+	local browse = M.config.keymaps.browse
+
+	if type(manage) == "string" and manage ~= "" then
+		vim.keymap.set("n", manage, M.manage, { silent = true, desc = "RTFM manage adapters" })
+	end
+
+	if type(browse) == "string" and browse ~= "" then
+		vim.keymap.set("n", browse, M.browse, { silent = true, desc = "RTFM browse docs" })
+	end
+end
+
 local function create_user_commands()
 	vim.api.nvim_create_user_command("RtfmManage", function()
 		M.manage()
@@ -322,6 +357,7 @@ M.setup = function(opts)
 	opts = opts or {}
 	M.config = vim.tbl_deep_extend("force", M.config, opts)
 	Viewer.configure(M.config.viewer)
+	apply_global_keymaps()
 
 	if vim.g.rtfm_commands_created ~= 1 then
 		create_user_commands()

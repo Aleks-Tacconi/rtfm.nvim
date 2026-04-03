@@ -121,8 +121,10 @@ end
 --- Runs crawler extraction synchronously for a given output scope directory.
 --- @param scope_dir string
 --- @param crawler_spec table
+--- @param opts table|nil
 --- @return nil
-function M:_run_scope_sync(scope_dir, crawler_spec)
+function M:_run_scope_sync(scope_dir, crawler_spec, opts)
+	opts = opts or {}
 	local crawler = CrawlerConfig:new(crawler_spec)
 	local parent_path = utils.data_dir .. self.doc
 	local target_path = parent_path .. "/" .. scope_dir
@@ -133,7 +135,7 @@ function M:_run_scope_sync(scope_dir, crawler_spec)
 
 	local ok, err = pcall(function()
 		crawler:fetch_sync()
-		crawler:fetch_all_documentation_sync(temp_path)
+		crawler:fetch_all_documentation_sync(temp_path, opts)
 		commit_scope_sync(temp_path, target_path)
 	end)
 
@@ -150,8 +152,8 @@ function M:config_builtins(crawler_spec, done)
 end
 
 --- @param crawler_spec table
-function M:config_builtins_sync(crawler_spec)
-	self:_run_scope_sync("builtin", crawler_spec)
+function M:config_builtins_sync(crawler_spec, opts)
+	self:_run_scope_sync("builtin", crawler_spec, opts)
 end
 
 --- @param crawler_spec table
@@ -160,8 +162,8 @@ function M:config_stdlib(crawler_spec, done)
 end
 
 --- @param crawler_spec table
-function M:config_stdlib_sync(crawler_spec)
-	self:_run_scope_sync("stdlib", crawler_spec)
+function M:config_stdlib_sync(crawler_spec, opts)
+	self:_run_scope_sync("stdlib", crawler_spec, opts)
 end
 
 --- @param crawler_spec table
@@ -170,8 +172,8 @@ function M:config_misc(crawler_spec, done)
 end
 
 --- @param crawler_spec table
-function M:config_misc_sync(crawler_spec)
-	self:_run_scope_sync("misc", crawler_spec)
+function M:config_misc_sync(crawler_spec, opts)
+	self:_run_scope_sync("misc", crawler_spec, opts)
 end
 
 --- @class AdapterSpec
@@ -203,8 +205,8 @@ function M.define(spec)
 			adapter[scope.method] = function(self, done)
 				self:_run_scope(scope_dir, self.spec[scope_key], done)
 			end
-			adapter[scope.method .. "_sync"] = function(self)
-				self:_run_scope_sync(scope_dir, self.spec[scope_key])
+			adapter[scope.method .. "_sync"] = function(self, opts)
+				self:_run_scope_sync(scope_dir, self.spec[scope_key], opts)
 			end
 		end
 	end

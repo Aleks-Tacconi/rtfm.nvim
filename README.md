@@ -46,15 +46,23 @@ In the age of AI it is easy to ask ChatGPT for documentation, but that often ski
 ## Setup
 
 ```lua
-require("rtfm").setup({
-	ensure_installed = { "python", "go" },
-	viewer = {
-		keymaps = {
-			prev = "[d",
-			next = "]d",
-		},
+{
+	"Aleks-Tacconi/rtfm.nvim",
+	dependencies = {
+		"nvim-telescope/telescope.nvim",
 	},
-})
+	config = function()
+		require("rtfm").setup({
+			ensure_installed = { "python", "go" },
+			viewer = {
+				keymaps = {
+					prev = "[d",
+					next = "]d",
+				},
+			},
+		})
+	end,
+}
 ```
 
 > If `ensure_installed` is omitted, nothing is downloaded until you install an adapter from `:RtfmManage`

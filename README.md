@@ -36,6 +36,16 @@ This plugin was inspired by [devdocs.nvim](https://github.com/maskudo/devdocs.nv
 
 In the age of AI it is easy to ask ChatGPT for documentation, but that often skips a lot of the detail and context you get from reading the official docs. The goal of this plugin is to make the official docs quick enough to access that they feel more convenient than asking AI first.
 
+<div align="center">
+  <img src="assets/1.png" alt="Adapter manager screenshot" width="900" />
+</div>
+
+<br/>
+
+<div align="center">
+  <img src="assets/2.png" alt="Documentation viewer screenshot" width="900" />
+</div>
+
 ## Requirements
 
 - `curl`
@@ -54,6 +64,10 @@ In the age of AI it is easy to ask ChatGPT for documentation, but that often ski
 	config = function()
 		require("rtfm").setup({
 			ensure_installed = { "python", "go" },
+			keymaps = {
+				manage = "<leader>rm",
+				browse = "<leader>rb",
+			},
 			viewer = {
 				keymaps = {
 					prev = "[d",
@@ -67,6 +81,10 @@ In the age of AI it is easy to ask ChatGPT for documentation, but that often ski
 
 > If `ensure_installed` is omitted, nothing is downloaded until you install an adapter from `:RtfmManage`
 
+`setup().keymaps` configures the global mappings for `:RtfmManage` and `:RtfmBrowse`. Set either side to `false` or `""` to disable it.
+
+`setup().viewer.keymaps` configures the buffer-local mappings for `:RtfmDocPrev` and `:RtfmDocNext` inside the viewer.
+
 ## User Commands
 
 - `:RtfmManage`
@@ -74,85 +92,7 @@ In the age of AI it is easy to ask ChatGPT for documentation, but that often ski
 - `:RtfmDocNext`
 - `:RtfmDocPrev`
 
-## Registering Adapters
-
-Built-in adapters are defined in `lua/rtfm.lua`:
-
-```lua
-M.adapters = {
-	go = "rtfm.adapters.go",
-	python = "rtfm.adapters.python",
-  ...
-}
-```
-
-You can register your own adapter module at runtime:
-
-```lua
-require("rtfm").register_adapter("my_lang", "my-plugin.adapters.my_lang")
-```
-
-If you build a generally useful adapter, feel free to open a merge request and contribute it upstream :).
-
-## Creating a New Adapter
-
-Create a file like `lua/rtfm/adapters/my_lang.lua` and return `Adapter.define(...)`.
-
-```lua
-local Adapter = require("rtfm.abc-adapter.adapter")
-local Rule = require("rtfm.abc-adapter.rule")
-
-return Adapter.define({
-	doc = "my_lang",
-	builtins = {
-		url = "https://example.com/docs/index.html",
-		seed_sources = {
-			"https://example.com/docs/intro.html",
-			"https://example.com/docs/functions.html",
-		},
-		documentation_rules = {
-			Rule.deep_tag("section"),
-			Rule.heading_level(2),
-		},
-		name_rule = Rule.regex([[<section id="\zs[^"]\+\ze"]]),
-	},
-})
-```
-
-### Adapter Spec Fields
-
-
-| Field | Required | Description |
-| --- | --- | --- |
-| `doc` | Yes | Output directory name, for example `python`. |
-| `builtins` / `stdlib` / `misc` | No | Optional crawler specs for each scope. |
-
-
-### Crawler spec
-
-
-| Field | Required | Description |
-| --- | --- | --- |
-| `url` | Yes | Root docs URL used for discovery. |
-| `seed_sources` | No | Additional full `https://...` source URLs to include before discovery runs. |
-| `source_rules` | No | Rule chain for extracting source URLs from `url`. If empty, discovery is skipped. |
-| `documentation_rules` | Yes | Rule chain for extracting doc sections from each source page. |
-| `name_rule` | Yes | Rule that extracts the section name from each documentation fragment. |
-
-
-### Available rule helpers
-
-
-| Helper | What it matches | Example |
-| --- | --- | --- |
-| `Rule.tag("section")` | Top-level HTML elements by tag name. | `Rule.tag("section")` |
-| `Rule.deep_tag("section")` | HTML elements by tag name, including nested matches. | `Rule.deep_tag("section")` |
-| `Rule.selector(".py")` | Full HTML elements by `.class` or `#id` selector. | `Rule.selector(".py")`, `Rule.selector("#module-string")` |
-| `Rule.heading_level(2)` | Keeps only fragments whose first heading is `h2`. | `Rule.heading_level(2)` |
-| `Rule.regex([[...]])` | All matches for a Vim regex expression. Use this for link extraction or custom name parsing. | `Rule.regex([[<a href="\zs[^"]\+\ze"]])` |
-
-
-> `Rule.regex(...)` uses Vim regex syntax.
+If the adapter you want is not built-in, you can create your own. See the [adapter guide](https://github.com/Aleks-Tacconi/rtfm.nvim/blob/main/ADAPTERS.md).
 
 ## Output Layout
 

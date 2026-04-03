@@ -133,26 +133,26 @@ function M.register_adapter(name, module_path)
 	M.adapters[name] = module_path
 end
 
-local function progress_lines(adapter_name, scopes, active_index, active_status, detail)
-	local lines = {
-		string.format(" 󰈔  Adapter  %s", adapter_name),
-		"",
-	}
+local function progress_lines(_, scopes, active_index, active_status, detail)
+	local lines = {}
 
 	for index, scope in ipairs(scopes) do
-		local status = "󰄱 pending"
+		local icon = "󰄱"
+		local status = "pending"
 		if index < active_index then
-			status = "󰄬 done"
+			icon = "󰄬"
+			status = "done"
 		elseif index == active_index then
-			status = active_status == "running" and "󰑓 running" or active_status
+			icon = active_status == "running" and "󰑓" or "󰄱"
+			status = active_status
 		end
 
-		table.insert(lines, string.format(" %s  %s", status, scope.dir))
+		table.insert(lines, string.format(" %s  %-8s  %s", icon, status, scope.dir))
 	end
 
 	if detail and detail ~= "" then
 		table.insert(lines, "")
-		table.insert(lines, " " .. detail)
+		table.insert(lines, "   " .. detail)
 	end
 
 	return lines
@@ -167,7 +167,7 @@ local function install_adapter_modal(name)
 
 	local scopes = enabled_scopes(adapter)
 	local detail = nil
-	Progress.open(string.format(" 󰑐  Installing %s", name))
+	Progress.open(string.format(" 󰇚  Installing %s", name))
 	Progress.set_lines(progress_lines(name, scopes, 1, "running", detail))
 
 	local ok, err = xpcall(function()

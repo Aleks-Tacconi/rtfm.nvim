@@ -110,7 +110,11 @@ local function run_scopes(adapter, scopes, opts, done)
 			return
 		end
 
-		notify(string.format("Installing '%s' %s (%d/%d)", adapter.doc, scope.dir, index, #scopes), vim.log.levels.INFO, opts.notify)
+		notify(
+			string.format("Installing '%s' %s (%d/%d)", adapter.doc, scope.dir, index, #scopes),
+			vim.log.levels.INFO,
+			opts.notify
+		)
 		adapter[scope.method](adapter, function(ok, err)
 			if not ok then
 				done(false, err)
@@ -167,10 +171,10 @@ local function install_adapter_modal(name)
 	Progress.set_lines(progress_lines(name, scopes, 1, "running", detail))
 
 	local ok, err = xpcall(function()
-		run_scopes_sync(adapter, scopes, function(scope, index)
+		run_scopes_sync(adapter, scopes, function(_, index)
 			detail = nil
 			Progress.set_lines(progress_lines(name, scopes, index, "running", detail))
-		end, function(scope, index, _, source, source_index, source_total)
+		end, function(_, index, _, source, source_index, source_total)
 			detail = string.format("package %d/%d  %s", source_index, source_total, source)
 			Progress.set_lines(progress_lines(name, scopes, index, "running", detail))
 		end)

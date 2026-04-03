@@ -95,12 +95,8 @@ local function render()
 		center_text("  j/k move   <CR> select   q close", M.state.width),
 		"",
 	}
-	for index, item in ipairs(M.state.items) do
-		if item.kind == "adapter" then
-			table.insert(lines, item.label)
-		else
-			table.insert(lines, item.label)
-		end
+	for _, item in ipairs(M.state.items) do
+		table.insert(lines, item.label)
 	end
 
 	vim.bo[M.state.buf].modifiable = true

@@ -61,18 +61,6 @@ local function truncate_display(text, max_width)
 	return table.concat(result) .. "…"
 end
 
---- Centers text inside a fixed display width.
---- @param text string
---- @param width integer
---- @return string
-local function center_text(text, width)
-	local content = truncate_display(text, width)
-	local padding = math.max(0, width - display_width(content))
-	local left_padding = math.floor(padding / 2)
-	local right_padding = padding - left_padding
-	return string.rep(" ", left_padding) .. content .. string.rep(" ", right_padding)
-end
-
 --- Converts a display column to a byte index.
 --- @param text string
 --- @param column integer
@@ -119,11 +107,7 @@ local function build_aligned_line(width, left, center, right)
 	local left_gap = math.max(0, center_start - left_width - 1)
 	local right_start = width - right_width + 1
 	local right_gap = math.max(0, right_start - center_end - 1)
-	local line = left_value
-		.. string.rep(" ", left_gap)
-		.. center_value
-		.. string.rep(" ", right_gap)
-		.. right_value
+	local line = left_value .. string.rep(" ", left_gap) .. center_value .. string.rep(" ", right_gap) .. right_value
 
 	return line, left_width + left_gap, center_width
 end
@@ -164,7 +148,8 @@ local function resolve_window()
 		return false
 	end
 
-	if M.session.winnr
+	if
+		M.session.winnr
 		and vim.api.nvim_win_is_valid(M.session.winnr)
 		and vim.api.nvim_win_get_buf(M.session.winnr) == M.session.bufnr
 	then
@@ -210,14 +195,16 @@ local function status_lines(width)
 
 	local previous = M.session.entries[M.session.index - 1]
 	local next_entry = M.session.entries[M.session.index + 1]
-	local summary = string.format("%d/%d  %s/%s", M.session.index, #M.session.entries, M.session.adapter, M.session.scope)
-	local summary_line, summary_start, summary_width = build_aligned_line(
+	local summary =
+		string.format("%d/%d  %s/%s", M.session.index, #M.session.entries, M.session.adapter, M.session.scope)
+	local summary_line, summary_start, summary_width =
+		build_aligned_line(width, key_hint(M.config.keymaps.prev), summary, key_hint(M.config.keymaps.next))
+	local nav_line = build_navigation_line(
 		width,
-		key_hint(M.config.keymaps.prev),
-		summary,
-		key_hint(M.config.keymaps.next)
+		previous and previous.title or nil,
+		entry.title,
+		next_entry and next_entry.title or nil
 	)
-	local nav_line = build_navigation_line(width, previous and previous.title or nil, entry.title, next_entry and next_entry.title or nil)
 	local highlights = {
 		{
 			line = 0,
@@ -249,7 +236,7 @@ local function apply_keymaps(bufnr)
 	if type(next_key) == "string" and next_key ~= "" then
 		vim.keymap.set("n", next_key, M.next, { buffer = bufnr, silent = true, desc = "RTFM next doc" })
 	end
-	end
+end
 
 --- Ensures the bottom status window exists for the current viewer window.
 --- @return nil
@@ -315,7 +302,11 @@ end
 --- @param index integer
 --- @return nil
 local function show_entry(index)
-	if not M.session or not vim.api.nvim_buf_is_valid(M.session.bufnr) or not vim.api.nvim_win_is_valid(M.session.winnr) then
+	if
+		not M.session
+		or not vim.api.nvim_buf_is_valid(M.session.bufnr)
+		or not vim.api.nvim_win_is_valid(M.session.winnr)
+	then
 		vim.notify("No active RTFM viewer session", vim.log.levels.WARN)
 		return
 	end
@@ -344,7 +335,10 @@ local function show_entry(index)
 	vim.bo[M.session.bufnr].swapfile = false
 	vim.bo[M.session.bufnr].filetype = "markdown"
 	vim.bo[M.session.bufnr].modifiable = false
-	vim.api.nvim_buf_set_name(M.session.bufnr, string.format("rtfm://%s/%s/%s", M.session.adapter, M.session.scope, entry.relative_path))
+	vim.api.nvim_buf_set_name(
+		M.session.bufnr,
+		string.format("rtfm://%s/%s/%s", M.session.adapter, M.session.scope, entry.relative_path)
+	)
 	vim.api.nvim_win_set_cursor(M.session.winnr, { 1, 0 })
 	render_status()
 end

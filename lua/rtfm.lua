@@ -9,6 +9,7 @@ local M = {}
 
 M.adapters = {
 	go = "rtfm.adapters.go",
+	lua = "rtfm.adapters.lua",
 	python = "rtfm.adapters.python",
 }
 

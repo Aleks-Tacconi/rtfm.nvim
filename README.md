@@ -129,12 +129,15 @@ return Adapter.define({
 
 ### Adapter Spec Fields
 
+
 | Field | Required | Description |
 | --- | --- | --- |
 | `doc` | Yes | Output directory name, for example `python`. |
 | `builtins` / `stdlib` / `misc` | No | Optional crawler specs for each scope. |
 
-Crawler spec:
+
+### Crawler spec
+
 
 | Field | Required | Description |
 | --- | --- | --- |
@@ -144,7 +147,9 @@ Crawler spec:
 | `documentation_rules` | Yes | Rule chain for extracting doc sections from each source page. |
 | `name_rule` | Yes | Rule that extracts the section name from each documentation fragment. |
 
-Available rule helpers:
+
+### Available rule helpers
+
 
 | Helper | What it matches | Example |
 | --- | --- | --- |
@@ -155,26 +160,7 @@ Available rule helpers:
 | `Rule.regex([[...]])` | All matches for a Vim regex expression. Use this for link extraction or custom name parsing. | `Rule.regex([[<a href="\zs[^"]\+\ze"]])` |
 
 
-> `Rule.regex(...)` uses Vim regex syntax, not Lua patterns.
-
-Docs are always written as:
-
-`<scope>/<source_name>/<normalized_name>.md`
-
-Normalization is fixed in core:
-
-- if the extracted name starts with `<source_name>.`, that prefix is removed
-- `._...` becomes `__`
-- remaining `.` become `__`
-
-Examples:
-
-- `os.system` -> `os/system.md`
-- `os.PathLike.__fspath__` -> `os/PathLike__fspath__.md`
-- `os.stat_result.st_mode` -> `os/stat_result__st_mode.md`
-- `net/http` source docs stay nested, for example `go/stdlib/net/http/pkg-overview.md`
-
-Generated markdown is wrapped for terminal readability, and each scope root gets a numbered `_index.md` file that preserves extraction order.
+> `Rule.regex(...)` uses Vim regex syntax.
 
 ## Output Layout
 

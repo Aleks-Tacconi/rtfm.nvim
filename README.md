@@ -56,17 +56,7 @@ require("rtfm").setup({
 })
 ```
 
-If `ensure_installed` is omitted, nothing is downloaded until you install an adapter from `:RtfmManage`.
-
-Manager-driven installs and removals run inside a modal progress window. Startup installs triggered by `ensure_installed` still run in the background.
-
-The viewer applies buffer-local navigation mappings from `setup().viewer.keymaps`. Set either side to `false` or `""` to disable it.
-
-You can still bind the browse command in your own config:
-
-```lua
-vim.keymap.set("n", "<leader>rb", "<cmd>RtfmBrowse<cr>")
-```
+> If `ensure_installed` is omitted, nothing is downloaded until you install an adapter from `:RtfmManage`
 
 ## User Commands
 
@@ -75,24 +65,15 @@ vim.keymap.set("n", "<leader>rb", "<cmd>RtfmBrowse<cr>")
 - `:RtfmDocNext`
 - `:RtfmDocPrev`
 
-`:RtfmManage` opens a floating adapter manager with two sections: installed and not installed. Use `j/k` to move, `<CR>` to install or remove the selected adapter, and `q` to close the window.
-
-If an install for the same adapter scope is already running, a second install request is rejected instead of overlapping.
-
-If source discovery or extraction returns no docs, the install now fails instead of replacing the scope with an empty result.
-
-`:RtfmBrowse` uses Telescope to traverse adapter -> scope -> source -> doc. Scope ordering is read from the generated `_index.md`, and the selected doc opens in a dedicated viewer buffer with a bottom status bar showing previous/current/next docs.
-
-If a scope has no `_index.md`, browsing that scope fails with a message telling you to install it from `:RtfmManage` first.
-
 ## Registering Adapters
 
 Built-in adapters are defined in `lua/rtfm.lua`:
 
 ```lua
-	M.adapters = {
+M.adapters = {
 	go = "rtfm.adapters.go",
 	python = "rtfm.adapters.python",
+  ...
 }
 ```
 
@@ -101,6 +82,8 @@ You can register your own adapter module at runtime:
 ```lua
 require("rtfm").register_adapter("my_lang", "my-plugin.adapters.my_lang")
 ```
+
+If you build a generally useful adapter, feel free to open a merge request and contribute it upstream :).
 
 ## Creating a New Adapter
 

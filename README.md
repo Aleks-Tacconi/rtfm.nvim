@@ -37,7 +37,7 @@ This plugin was inspired by [devdocs.nvim](https://github.com/maskudo/devdocs.nv
 In the age of AI it is easy to ask ChatGPT for documentation, but that often skips a lot of the detail and context you get from reading the official docs. The goal of this plugin is to make the official docs quick enough to access that they feel more convenient than asking AI first.
 
 <div align="center">
-  <img src="assets/1.png" alt="Adapter manager screenshot" width="900" />
+  <img src="assets/1.png" alt="Documentation selector screenshot" width="900" />
 </div>
 
 <br/>

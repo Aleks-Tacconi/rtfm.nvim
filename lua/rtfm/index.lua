@@ -74,7 +74,7 @@ end
 function M.load_scope_index(adapter, scope_dir)
 	local index_path = string.format("%s/_index.md", scope_path(adapter, scope_dir))
 	if vim.fn.filereadable(index_path) ~= 1 then
-		error(string.format("No index found for '%s/%s'. Run :RtfmInstall %s first.", adapter, scope_dir, adapter))
+		error(string.format("No index found for '%s/%s'. Install it from :RtfmManage first.", adapter, scope_dir))
 	end
 
 	local lines = vim.fn.readfile(index_path)
@@ -86,7 +86,7 @@ function M.load_scope_index(adapter, scope_dir)
 	end
 
 	if #entries == 0 then
-		error(string.format("Index for '%s/%s' is empty. Run :RtfmInstall %s again.", adapter, scope_dir, adapter))
+		error(string.format("Index for '%s/%s' is empty. Reinstall it from :RtfmManage.", adapter, scope_dir))
 	end
 
 	return {

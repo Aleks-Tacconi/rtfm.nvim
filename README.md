@@ -47,32 +47,35 @@ Generate and store local markdown docs for languages/frameworks via pluggable ad
 ```lua
 require("rtfm").setup({
 	ensure_installed = { "python" },
+	viewer = {
+		keymaps = {
+			prev = "[d",
+			next = "]d",
+		},
+	},
 })
 ```
 
-If `ensure_installed` is omitted, nothing is downloaded until `:RtfmInstall` is run.
+If `ensure_installed` is omitted, nothing is downloaded until you install an adapter from `:RtfmManage`.
 
-Adapter installs run in the background. Startup is not blocked, so docs may finish appearing shortly after Neovim loads.
+Manager-driven installs and removals run inside a modal progress window. Startup installs triggered by `ensure_installed` still run in the background.
 
-Background installs show simple progress notifications while docs are downloading and converting.
+The viewer applies buffer-local navigation mappings from `setup().viewer.keymaps`. Set either side to `false` or `""` to disable it.
 
-You can bind the browse and viewer commands in your own config:
+You can still bind the browse command in your own config:
 
 ```lua
 vim.keymap.set("n", "<leader>rb", "<cmd>RtfmBrowse<cr>")
-vim.keymap.set("n", "]d", "<cmd>RtfmDocNext<cr>")
-vim.keymap.set("n", "[d", "<cmd>RtfmDocPrev<cr>")
 ```
 
 ## User Commands
 
-- `:RtfmInstall <adapter>`
-- `:RtfmUninstall <adapter>`
+- `:RtfmManage`
 - `:RtfmBrowse`
 - `:RtfmDocNext`
 - `:RtfmDocPrev`
 
-The command argument is completed from registered adapters.
+`:RtfmManage` opens a floating adapter manager with two sections: installed and not installed. Use `j/k` to move, `<CR>` to install or remove the selected adapter, and `q` to close the window.
 
 If an install for the same adapter scope is already running, a second install request is rejected instead of overlapping.
 
@@ -80,7 +83,7 @@ If source discovery or extraction returns no docs, the install now fails instead
 
 `:RtfmBrowse` uses Telescope to traverse adapter -> scope -> source -> doc. Scope ordering is read from the generated `_index.md`, and the selected doc opens in a dedicated viewer buffer with a bottom status bar showing previous/current/next docs.
 
-If a scope has no `_index.md`, browsing that scope fails with a message telling you to run `:RtfmInstall <adapter>` first.
+If a scope has no `_index.md`, browsing that scope fails with a message telling you to install it from `:RtfmManage` first.
 
 ## Registering Adapters
 

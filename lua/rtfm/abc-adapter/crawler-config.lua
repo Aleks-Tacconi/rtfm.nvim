@@ -168,6 +168,15 @@ local function write_index(output_path, entries)
 	utils.write_file(output_path .. "/_index.md", table.concat(lines, "\n") .. "\n")
 end
 
+local function apply_rule_chain_sync(html, rules)
+	local ok, result = pcall(apply_rule_chain, html, rules)
+	if not ok then
+		error(result)
+	end
+
+	return result
+end
+
 local function run_sequential(items, iterator, done)
 	local index = 1
 
@@ -275,6 +284,27 @@ function M:fetch(done)
 	end)
 end
 
+--- Fetches and discovers documentation sources synchronously.
+--- @return nil
+function M:fetch_sync()
+	if #self.source_rules == 0 then
+		return
+	end
+
+	local html = utils.curl(self.url)
+	if not html then
+		error(string.format("could not fetch '%s'", self.url))
+	end
+
+	for _, source in ipairs(apply_rule_chain_sync(html, self.source_rules)) do
+		self:add_source(source)
+	end
+
+	if #self.sources == 0 then
+		error(string.format("no documentation sources discovered for '%s'", self.url))
+	end
+end
+
 --- Fetches a documentation source, splits it into sections, derives stable names from name_rule,
 --- and writes the sections under source_name/normalized_name.md.
 --- @param source string: The URL of the documentation source to fetch
@@ -335,6 +365,41 @@ function M:fetch_documentation(source, output_path, done)
 	end)
 end
 
+--- Fetches a documentation source synchronously and writes extracted docs.
+--- @param source string
+--- @param output_path string
+--- @return nil
+function M:fetch_documentation_sync(source, output_path)
+	local html = utils.curl(source)
+	if not html then
+		error(string.format("could not fetch '%s'", source))
+	end
+
+	local sections = { html }
+	if #self.documentation_rules > 0 then
+		sections = apply_rule_chain_sync(html, self.documentation_rules)
+	end
+
+	local source_key = source_name(source):gsub("%.", "/")
+	for index, section in ipairs(sections) do
+		local ctx = section_context(source, section, index)
+		local section_name = derive_section_name(section, self.name_rule)
+		if not section_name then
+			error(string.format("could not derive section name for '%s' section %d", source, index))
+		end
+
+		local normalized_name = normalize_section_name(ctx.source_name, section_name)
+		if not normalized_name then
+			error(string.format("invalid normalized section name '%s' for '%s'", section_name, source))
+		end
+
+		local relative_path = path_utils.normalize(string.format("%s/%s", source_key, normalized_name))
+		local file_path = output_path .. "/" .. relative_path .. ".md"
+		utils.write_file(file_path, utils.html_to_markdown(section))
+		register_index_entry(self._index_entries, relative_path, ctx)
+	end
+end
+
 --- Fetches the documentation from all collected source URLs and stores them under output_path.
 --- @param output_path string: The directory path to store the fetched documentation sections in
 function M:fetch_all_documentation(output_path, done)
@@ -364,6 +429,25 @@ function M:fetch_all_documentation(output_path, done)
 
 		done(true)
 	end)
+end
+
+--- Fetches all queued documentation synchronously and writes the scope index.
+--- @param output_path string
+--- @return nil
+function M:fetch_all_documentation_sync(output_path)
+	if #self.sources == 0 then
+		error(string.format("no documentation sources queued for '%s'", self.url))
+	end
+
+	for _, source in ipairs(self.sources) do
+		self:fetch_documentation_sync(source, output_path)
+	end
+
+	if #self._index_entries == 0 then
+		error(string.format("no documentation entries extracted for '%s'", self.url))
+	end
+
+	write_index(output_path, self._index_entries)
 end
 
 return M

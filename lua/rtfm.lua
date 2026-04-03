@@ -1,6 +1,8 @@
 local utils = require("rtfm.utils")
 local Adapter = require("rtfm.abc-adapter.adapter")
 local Browser = require("rtfm.browser")
+local Manage = require("rtfm.manage")
+local Progress = require("rtfm.progress")
 local Viewer = require("rtfm.viewer")
 
 local M = {}
@@ -11,25 +13,14 @@ M.adapters = {
 
 M.ensure_installed = {}
 M._active_installs = {}
-
-local function adapter_names()
-	local names = {}
-	for name, _ in pairs(M.adapters) do
-		table.insert(names, name)
-	end
-	table.sort(names)
-	return names
-end
-
-local function complete_adapter_name(arg_lead)
-	local matches = {}
-	for _, name in ipairs(adapter_names()) do
-		if name:find("^" .. vim.pesc(arg_lead)) then
-			table.insert(matches, name)
-		end
-	end
-	return matches
-end
+M.config = {
+	viewer = {
+		keymaps = {
+			prev = "[d",
+			next = "]d",
+		},
+	},
+}
 
 local function load_adapter(name)
 	if not M.adapters[name] then
@@ -88,6 +79,16 @@ local function enabled_scopes(adapter)
 	return scopes
 end
 
+local function run_scopes_sync(adapter, scopes, on_scope)
+	for index, scope in ipairs(scopes) do
+		if on_scope then
+			on_scope(scope, index, #scopes)
+		end
+
+		adapter[scope.method .. "_sync"](adapter)
+	end
+end
+
 local function run_scopes(adapter, scopes, opts, done)
 	local index = 1
 
@@ -115,6 +116,69 @@ end
 
 function M.register_adapter(name, module_path)
 	M.adapters[name] = module_path
+end
+
+local function progress_lines(adapter_name, scopes, active_index, active_status)
+	local lines = {
+		string.format(" 󰈔  Adapter  %s", adapter_name),
+		"",
+	}
+
+	for index, scope in ipairs(scopes) do
+		local status = "󰄱 pending"
+		if index < active_index then
+			status = "󰄬 done"
+		elseif index == active_index then
+			status = active_status == "running" and "󰑓 running" or active_status
+		end
+
+		table.insert(lines, string.format(" %s  %s", status, scope.dir))
+	end
+
+	return lines
+end
+
+local function install_adapter_modal(name)
+	local adapter = load_adapter(name):new()
+	local locks, lock_err = acquire_scope_locks(adapter)
+	if not locks then
+		error(lock_err)
+	end
+
+	local scopes = enabled_scopes(adapter)
+	Progress.open(string.format(" 󰑐  Installing %s", name))
+	Progress.set_lines(progress_lines(name, scopes, 1, "running"))
+
+	local ok, err = xpcall(function()
+		run_scopes_sync(adapter, scopes, function(scope, index)
+			Progress.set_lines(progress_lines(name, scopes, index, "running"))
+		end)
+	end, debug.traceback)
+
+	if ok then
+		Progress.set_lines(progress_lines(name, scopes, #scopes + 1, "done"))
+	end
+
+	Progress.close()
+	release_scope_locks(locks)
+
+	if not ok then
+		error(err)
+	end
+
+	vim.notify(string.format("Installed '%s'", name), vim.log.levels.INFO)
+end
+
+local function uninstall_adapter_modal(name)
+	Progress.open(string.format("Removing %s", name))
+	Progress.set_lines({ string.format(" 󰆴  Removing adapter  %s", name) })
+	local ok, err = utils.safe_delete(utils.data_dir .. name)
+	Progress.close()
+	if not ok then
+		error(err)
+	end
+
+	vim.notify(string.format("Removed '%s'", name), vim.log.levels.INFO)
 end
 
 function M.install_adapter(name, opts)
@@ -171,6 +235,35 @@ function M.uninstall_adapter(name)
 	return true
 end
 
+--- Opens the adapter manager UI.
+--- @return nil
+function M.manage()
+	Manage.open({
+		adapters = M.adapters,
+		on_install = function(name)
+			local ok, err = xpcall(function()
+				install_adapter_modal(name)
+			end, debug.traceback)
+			if not ok then
+				vim.notify(err, vim.log.levels.ERROR)
+			end
+			M.manage()
+		end,
+		on_remove = function(name)
+			local ok, err = xpcall(function()
+				uninstall_adapter_modal(name)
+			end, debug.traceback)
+			if not ok then
+				vim.notify(err, vim.log.levels.ERROR)
+			end
+			M.manage()
+		end,
+		reopen = function()
+			M.manage()
+		end,
+	})
+end
+
 --- Opens the Telescope browser for installed docs.
 --- @return boolean
 function M.browse()
@@ -196,20 +289,10 @@ function M.prev_doc()
 end
 
 local function create_user_commands()
-	vim.api.nvim_create_user_command("RtfmInstall", function(opts)
-		vim.schedule(function()
-			M.install_adapter(opts.args)
-		end)
+	vim.api.nvim_create_user_command("RtfmManage", function()
+		M.manage()
 	end, {
-		nargs = 1,
-		complete = complete_adapter_name,
-	})
-
-	vim.api.nvim_create_user_command("RtfmUninstall", function(opts)
-		M.uninstall_adapter(opts.args)
-	end, {
-		nargs = 1,
-		complete = complete_adapter_name,
+		nargs = 0,
 	})
 
 	vim.api.nvim_create_user_command("RtfmBrowse", function()
@@ -235,12 +318,16 @@ end
 --- @param opts table|nil: Setup options
 --- @return nil
 M.setup = function(opts)
+	opts = opts or {}
+	M.config = vim.tbl_deep_extend("force", M.config, opts)
+	Viewer.configure(M.config.viewer)
+
 	if vim.g.rtfm_commands_created ~= 1 then
 		create_user_commands()
 		vim.g.rtfm_commands_created = 1
 	end
 
-	M.ensure_installed = (opts and opts.ensure_installed) or {}
+	M.ensure_installed = opts.ensure_installed or {}
 
 	utils.ensure_directory(utils.data_dir)
 

@@ -8,6 +8,7 @@ local Viewer = require("rtfm.viewer")
 local M = {}
 
 M.adapters = {
+	go = "rtfm.adapters.go",
 	python = "rtfm.adapters.python",
 }
 

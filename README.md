@@ -32,8 +32,9 @@
 
 ## About
 
-Generate and store local markdown docs for languages/frameworks via pluggable adapters.
-...
+This plugin was inspired by [devdocs.nvim](https://github.com/maskudo/devdocs.nvim), however I wanted something that fit my use case better. I found devdocs generally didn't have language builtins and lacked some frameworks that I wanted to explore, so I built this plugin. rtfm.nvim allows for creating easy creation of adapters for any language / framework desired with simple plug and play support. 
+
+In the age of AI it is easy to ask ChatGPT for documentation, but that often skips a lot of the detail and context you get from reading the official docs. The goal of this plugin is to make the official docs quick enough to access that they feel more convenient than asking AI first.
 
 ## Requirements
 

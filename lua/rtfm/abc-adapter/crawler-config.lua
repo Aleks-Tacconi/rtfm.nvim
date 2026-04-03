@@ -62,8 +62,19 @@ end
 
 local function source_name(url)
 	local source_path = url_path(url)
-	local basename = source_path:match("/([^/]+)$") or "index"
-	return (basename:gsub("%.html?$", ""))
+	source_path = source_path:gsub("@[^/]+$", "")
+	source_path = source_path:gsub("/+$", "")
+
+	if source_path == "" or source_path == "/" then
+		return "index"
+	end
+
+	if source_path:match("%.html?$") then
+		local basename = source_path:match("/([^/]+)$") or "index"
+		return (basename:gsub("%.html?$", ""))
+	end
+
+	return source_path:gsub("^/", "")
 end
 
 local function derive_section_name(section, rule)

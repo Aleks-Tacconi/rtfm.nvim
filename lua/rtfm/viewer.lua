@@ -331,7 +331,7 @@ local function show_entry(index)
 	vim.api.nvim_buf_set_lines(M.session.bufnr, 0, -1, false, lines)
 	vim.bo[M.session.bufnr].modifiable = false
 	vim.bo[M.session.bufnr].buftype = "nofile"
-	vim.bo[M.session.bufnr].bufhidden = "hide"
+	vim.bo[M.session.bufnr].bufhidden = "wipe"
 	vim.bo[M.session.bufnr].swapfile = false
 	vim.bo[M.session.bufnr].filetype = "markdown"
 	vim.bo[M.session.bufnr].modifiable = false
@@ -361,9 +361,7 @@ end
 --- Returns whether the active window is showing the viewer buffer.
 --- @return boolean
 local function in_viewer_window()
-	return M.session
-		and vim.api.nvim_win_is_valid(0)
-		and vim.api.nvim_win_get_buf(0) == M.session.bufnr
+	return M.session and vim.api.nvim_win_is_valid(0) and vim.api.nvim_win_get_buf(0) == M.session.bufnr
 end
 
 --- Opens an ordered documentation viewer session.
@@ -392,7 +390,7 @@ function M.open(context, entries, index)
 	}
 	apply_keymaps(bufnr)
 
-	vim.api.nvim_create_autocmd({ "WinClosed", "BufWipeout" }, {
+	vim.api.nvim_create_autocmd("BufWipeout", {
 		group = M.augroup,
 		buffer = bufnr,
 		once = false,
@@ -403,18 +401,6 @@ function M.open(context, entries, index)
 
 			clear_overlay()
 			M.session = nil
-		end,
-	})
-
-	vim.api.nvim_create_autocmd({ "BufLeave", "WinLeave" }, {
-		group = M.augroup,
-		buffer = bufnr,
-		callback = function()
-			if not M.session or M.session.bufnr ~= bufnr then
-				return
-			end
-
-			clear_overlay()
 		end,
 	})
 

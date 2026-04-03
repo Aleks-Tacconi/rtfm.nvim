@@ -39,6 +39,10 @@ local function validate_scope(scope_name, scope)
 		error(string.format("adapter scope '%s' field 'source_filter' must be a function", scope_name))
 	end
 
+	if scope.path_mapper ~= nil and type(scope.path_mapper) ~= "function" then
+		error(string.format("adapter scope '%s' field 'path_mapper' must be a function", scope_name))
+	end
+
 	if scope.request_delay_ms ~= nil and (type(scope.request_delay_ms) ~= "number" or scope.request_delay_ms < 0) then
 		error(string.format("adapter scope '%s' field 'request_delay_ms' must be a non-negative number", scope_name))
 	end

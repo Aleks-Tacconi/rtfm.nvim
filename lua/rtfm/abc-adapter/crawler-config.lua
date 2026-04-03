@@ -147,9 +147,41 @@ local function section_context(source, section, index)
 	}
 end
 
+--- Returns the default relative output path for a section.
+--- @param ctx table
+--- @return string
+local function default_relative_path(ctx)
+	local source_key = ctx.source_name:gsub("%.", "/")
+	return string.format("%s/%s", source_key, ctx.normalized_name)
+end
+
+--- Returns the validated relative output path for a section.
+--- @param self table
+--- @param ctx table
+--- @return string
+local function relative_output_path(self, ctx)
+	local relative_path = default_relative_path(ctx)
+	if self.path_mapper then
+		relative_path = self.path_mapper(ctx)
+	end
+
+	return path_utils.normalize(relative_path)
+end
+
+--- Returns a cleaned title for index entries.
+--- @param title string
+--- @return string
+local function normalize_title(title)
+	local normalized = title:gsub("¶", "")
+	normalized = normalized:gsub("&#x[bB]6;", "")
+	normalized = normalized:gsub("&#182;", "")
+	normalized = normalized:gsub("%s+", " ")
+	return vim.trim(normalized)
+end
+
 local function display_title(ctx, relative_path)
 	if ctx.heading_text and ctx.heading_text ~= "" then
-		return ctx.heading_text:gsub("¶", ""):gsub("%s+$", "")
+		return normalize_title(ctx.heading_text)
 	end
 
 	if ctx.section_id and ctx.section_id ~= "" then
@@ -219,6 +251,7 @@ end
 --- @field seed_sources string[]: Optional initial source URLs to fetch documentation from
 --- @field dedupe_sources boolean: Whether to deduplicate discovered/seeded source URLs
 --- @field name_rule Rule Derives a stable section name from extracted section html
+--- @field path_mapper fun(ctx: table): string|nil Optional hook that maps a section context to a relative output path
 --- @field sources string[] Collected documentation source URLs
 local M = {}
 
@@ -232,6 +265,7 @@ function M:new(spec)
 		name_rule = spec.name_rule,
 		seed_sources = spec.seed_sources or {},
 		source_filter = spec.source_filter,
+		path_mapper = spec.path_mapper,
 		request_delay_ms = spec.request_delay_ms or 0,
 		retry_failed_fetches = spec.retry_failed_fetches == true,
 		retry_delay_ms = spec.retry_delay_ms or 3000,
@@ -398,8 +432,6 @@ function M:fetch_documentation(source, output_path, done)
 				sections = rules_or_err
 			end
 
-			local source_key = source_name(source):gsub("%.", "/")
-
 			run_sequential(sections, function(section, index, next_section)
 				local ctx = section_context(source, section, index)
 				local section_name = derive_section_name(section, self.name_rule)
@@ -420,7 +452,9 @@ function M:fetch_documentation(source, output_path, done)
 					return
 				end
 
-				local relative_path = path_utils.normalize(string.format("%s/%s", source_key, normalized_name))
+				ctx.section_name = section_name
+				ctx.normalized_name = normalized_name
+				local relative_path = relative_output_path(self, ctx)
 				local file_path = output_path .. "/" .. relative_path .. ".md"
 
 				utils.html_to_markdown_async(section, function(markdown_ok, markdown_or_err)
@@ -459,7 +493,6 @@ function M:fetch_documentation_sync(source, output_path)
 		sections = apply_rule_chain_sync(html, self.documentation_rules)
 	end
 
-	local source_key = source_name(source):gsub("%.", "/")
 	for index, section in ipairs(sections) do
 		local ctx = section_context(source, section, index)
 		local section_name = derive_section_name(section, self.name_rule)
@@ -472,7 +505,9 @@ function M:fetch_documentation_sync(source, output_path)
 			error(string.format("invalid normalized section name '%s' for '%s'", section_name, source))
 		end
 
-		local relative_path = path_utils.normalize(string.format("%s/%s", source_key, normalized_name))
+		ctx.section_name = section_name
+		ctx.normalized_name = normalized_name
+		local relative_path = relative_output_path(self, ctx)
 		local file_path = output_path .. "/" .. relative_path .. ".md"
 		utils.write_file(file_path, utils.html_to_markdown(section))
 		register_index_entry(self._index_entries, relative_path, ctx)

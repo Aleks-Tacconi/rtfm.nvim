@@ -102,12 +102,14 @@ Docs are written under `stdpath("data") .. "/rtfm/"`, typically:
 <data>/rtfm/
   go/
 	  builtin/
-		builtin/pkg-overview.md
-		builtin/pkg-functions.md
+		functions/append.md
+		types/error.md
+		constants/pkg-constants.md
+		variables/pkg-variables.md
 		_index.md
 	  stdlib/
-		net/http/pkg-overview.md
-		fmt/pkg-functions.md
+		fmt/Println.md
+		net/http/Client.md
 		_index.md
   python/
 	  builtin/

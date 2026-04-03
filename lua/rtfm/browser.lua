@@ -47,28 +47,30 @@ local function open_picker(title, entries, display_key, on_select)
 	end
 
 	local telescope = telescope_modules()
-	telescope.pickers.new({}, {
-		prompt_title = title,
-		finder = telescope.finders.new_table({
-			results = entries,
-			entry_maker = function(entry)
-				return {
-					value = entry,
-					display = entry[display_key],
-					ordinal = entry[display_key],
-				}
+	telescope.pickers
+		.new({}, {
+			prompt_title = title,
+			finder = telescope.finders.new_table({
+				results = entries,
+				entry_maker = function(entry)
+					return {
+						value = entry,
+						display = entry[display_key],
+						ordinal = entry[display_key],
+					}
+				end,
+			}),
+			sorter = telescope.conf.generic_sorter({}),
+			attach_mappings = function(prompt_bufnr)
+				telescope.actions.select_default:replace(function()
+					local selection = telescope.action_state.get_selected_entry()
+					telescope.actions.close(prompt_bufnr)
+					on_select(selection.value)
+				end)
+				return true
 			end,
-		}),
-		sorter = telescope.conf.generic_sorter({}),
-		attach_mappings = function(prompt_bufnr)
-			telescope.actions.select_default:replace(function()
-				local selection = telescope.action_state.get_selected_entry()
-				telescope.actions.close(prompt_bufnr)
-				on_select(selection.value)
-			end)
-			return true
-		end,
-	}):find()
+		})
+		:find()
 end
 
 --- Opens the final doc picker for a source group.

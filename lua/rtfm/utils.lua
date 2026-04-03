@@ -59,14 +59,18 @@ end
 --- @param url string
 --- @param callback fun(ok: boolean, result: string)
 M.curl_async = function(url, callback)
-	vim.system(curl_command(url), { text = true }, vim.schedule_wrap(function(result)
-		if result.code ~= 0 then
-			callback(false, shell_error_message(string.format("curl %s", url), result))
-			return
-		end
+	vim.system(
+		curl_command(url),
+		{ text = true },
+		vim.schedule_wrap(function(result)
+			if result.code ~= 0 then
+				callback(false, shell_error_message(string.format("curl %s", url), result))
+				return
+			end
 
-		callback(true, result.stdout or "")
-	end))
+			callback(true, result.stdout or "")
+		end)
+	)
 end
 
 --- Ensures that the specified directory exists. If it does not exist, it creates the directory.
@@ -211,24 +215,28 @@ end
 --- @param html string
 --- @param callback fun(ok: boolean, result: string)
 M.html_to_markdown_async = function(html, callback)
-	vim.system({
-		"pandoc",
-		"-f",
-		"html",
-		"-t",
-		"gfm-raw_html",
-		"--reference-links",
-		"--wrap=auto",
-		"--columns=100",
-		"--quiet",
-	}, { text = true, stdin = html }, vim.schedule_wrap(function(result)
-		if result.code ~= 0 then
-			callback(false, shell_error_message("pandoc html conversion", result))
-			return
-		end
+	vim.system(
+		{
+			"pandoc",
+			"-f",
+			"html",
+			"-t",
+			"gfm-raw_html",
+			"--reference-links",
+			"--wrap=auto",
+			"--columns=100",
+			"--quiet",
+		},
+		{ text = true, stdin = html },
+		vim.schedule_wrap(function(result)
+			if result.code ~= 0 then
+				callback(false, shell_error_message("pandoc html conversion", result))
+				return
+			end
 
-		callback(true, normalize_markdown(result.stdout or ""))
-	end))
+			callback(true, normalize_markdown(result.stdout or ""))
+		end)
+	)
 end
 
 return M

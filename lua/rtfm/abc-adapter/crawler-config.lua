@@ -86,7 +86,8 @@ local function derive_section_name(section, rule)
 			return vim.trim(fallback_id)
 		end
 
-		local desc_class = section:match('<span class="sig%-prename descclassname"><span class="pre">(.-)</span></span>')
+		local desc_class =
+			section:match('<span class="sig%-prename descclassname"><span class="pre">(.-)</span></span>')
 		local desc_name = section:match('<span class="sig%-name descname"><span class="pre">(.-)</span></span>')
 		if desc_name and desc_name ~= "" then
 			return vim.trim((desc_class or "") .. desc_name)
@@ -165,7 +166,6 @@ local function register_index_entry(entries, relative_path, ctx)
 	})
 end
 
-
 local function write_index(output_path, entries)
 	if #entries == 0 then
 		return
@@ -233,6 +233,8 @@ function M:new(spec)
 		seed_sources = spec.seed_sources or {},
 		source_filter = spec.source_filter,
 		request_delay_ms = spec.request_delay_ms or 0,
+		retry_failed_fetches = spec.retry_failed_fetches == true,
+		retry_delay_ms = spec.retry_delay_ms or 3000,
 		dedupe_sources = spec.dedupe_sources ~= false,
 		sources = {},
 		_source_set = {},
@@ -265,6 +267,41 @@ local function defer_with_request_delay(delay_ms, callback)
 	vim.defer_fn(callback, delay_ms)
 end
 
+local function fetch_html_sync(self, url)
+	while true do
+		local html = utils.curl(url)
+		if html then
+			return html
+		end
+
+		if not self.retry_failed_fetches then
+			return nil
+		end
+
+		wait_for_request_delay(self.retry_delay_ms)
+	end
+end
+
+local function fetch_html_async(self, url, callback)
+	local function attempt()
+		utils.curl_async(url, function(ok, result)
+			if ok then
+				callback(true, result)
+				return
+			end
+
+			if not self.retry_failed_fetches then
+				callback(false, result)
+				return
+			end
+
+			defer_with_request_delay(self.retry_delay_ms, attempt)
+		end)
+	end
+
+	attempt()
+end
+
 --- Adds a source to the crawler configuration
 --- @param source string: The URL of the documentation source to add
 function M:add_source(source)
@@ -292,7 +329,7 @@ function M:fetch(done)
 		return
 	end
 
-	utils.curl_async(self.url, function(ok, result)
+	fetch_html_async(self, self.url, function(ok, result)
 		if not ok then
 			done(false, result)
 			return
@@ -324,7 +361,7 @@ function M:fetch_sync()
 		return
 	end
 
-	local html = utils.curl(self.url)
+	local html = fetch_html_sync(self, self.url)
 	if not html then
 		error(string.format("could not fetch '%s'", self.url))
 	end
@@ -344,58 +381,64 @@ end
 --- @param output_path string: The directory path to store the fetched documentation sections in
 function M:fetch_documentation(source, output_path, done)
 	defer_with_request_delay(self.request_delay_ms, function()
-		utils.curl_async(source, function(ok, result)
-		if not ok then
-			done(false, result)
-			return
-		end
-
-		local sections = { result }
-		if #self.documentation_rules > 0 then
-			local rules_ok, rules_or_err = pcall(apply_rule_chain, result, self.documentation_rules)
-			if not rules_ok then
-				done(false, rules_or_err)
+		fetch_html_async(self, source, function(ok, result)
+			if not ok then
+				done(false, result)
 				return
 			end
 
-			sections = rules_or_err
-		end
-
-		local source_key = source_name(source):gsub("%.", "/")
-
-		run_sequential(sections, function(section, index, next_section)
-			local ctx = section_context(source, section, index)
-			local section_name = derive_section_name(section, self.name_rule)
-			if not section_name then
-				next_section(false, string.format("could not derive section name for '%s' section %d", source, index))
-				return
-			end
-
-			local normalized_name = normalize_section_name(ctx.source_name, section_name)
-			if not normalized_name then
-				next_section(false, string.format("invalid normalized section name '%s' for '%s'", section_name, source))
-				return
-			end
-
-			local relative_path = path_utils.normalize(string.format("%s/%s", source_key, normalized_name))
-			local file_path = output_path .. "/" .. relative_path .. ".md"
-
-			utils.html_to_markdown_async(section, function(markdown_ok, markdown_or_err)
-				if not markdown_ok then
-					next_section(false, markdown_or_err)
+			local sections = { result }
+			if #self.documentation_rules > 0 then
+				local rules_ok, rules_or_err = pcall(apply_rule_chain, result, self.documentation_rules)
+				if not rules_ok then
+					done(false, rules_or_err)
 					return
 				end
 
-				local write_ok, write_err = pcall(utils.write_file, file_path, markdown_or_err)
-				if not write_ok then
-					next_section(false, write_err)
+				sections = rules_or_err
+			end
+
+			local source_key = source_name(source):gsub("%.", "/")
+
+			run_sequential(sections, function(section, index, next_section)
+				local ctx = section_context(source, section, index)
+				local section_name = derive_section_name(section, self.name_rule)
+				if not section_name then
+					next_section(
+						false,
+						string.format("could not derive section name for '%s' section %d", source, index)
+					)
 					return
 				end
 
-				register_index_entry(self._index_entries, relative_path, ctx)
-				next_section(true)
-			end)
-		end, done)
+				local normalized_name = normalize_section_name(ctx.source_name, section_name)
+				if not normalized_name then
+					next_section(
+						false,
+						string.format("invalid normalized section name '%s' for '%s'", section_name, source)
+					)
+					return
+				end
+
+				local relative_path = path_utils.normalize(string.format("%s/%s", source_key, normalized_name))
+				local file_path = output_path .. "/" .. relative_path .. ".md"
+
+				utils.html_to_markdown_async(section, function(markdown_ok, markdown_or_err)
+					if not markdown_ok then
+						next_section(false, markdown_or_err)
+						return
+					end
+
+					local write_ok, write_err = pcall(utils.write_file, file_path, markdown_or_err)
+					if not write_ok then
+						next_section(false, write_err)
+						return
+					end
+
+					register_index_entry(self._index_entries, relative_path, ctx)
+					next_section(true)
+				end)
+			end, done)
 		end)
 	end)
 end
@@ -406,7 +449,7 @@ end
 --- @return nil
 function M:fetch_documentation_sync(source, output_path)
 	wait_for_request_delay(self.request_delay_ms)
-	local html = utils.curl(source)
+	local html = fetch_html_sync(self, source)
 	if not html then
 		error(string.format("could not fetch '%s'", source))
 	end

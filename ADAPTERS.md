@@ -66,6 +66,8 @@ return Adapter.define({
 | `source_rules` | No | Rule chain for extracting source URLs from `url`. If empty, discovery is skipped. |
 | `source_filter` | No | Function that receives each resolved source URL and returns `true` to keep it or `false` to skip it. |
 | `request_delay_ms` | No | Delay in milliseconds before fetching each source page. Useful for rate-limited doc sites. |
+| `retry_failed_fetches` | No | When `true`, keeps retrying failed HTTP fetches until they succeed. |
+| `retry_delay_ms` | No | Delay in milliseconds between fetch retries when `retry_failed_fetches` is enabled. |
 | `documentation_rules` | Yes | Rule chain for extracting doc sections from each source page. |
 | `name_rule` | Yes | Rule that extracts the section name from each documentation fragment. |
 

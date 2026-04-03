@@ -43,6 +43,14 @@ local function validate_scope(scope_name, scope)
 		error(string.format("adapter scope '%s' field 'request_delay_ms' must be a non-negative number", scope_name))
 	end
 
+	if scope.retry_failed_fetches ~= nil and type(scope.retry_failed_fetches) ~= "boolean" then
+		error(string.format("adapter scope '%s' field 'retry_failed_fetches' must be a boolean", scope_name))
+	end
+
+	if scope.retry_delay_ms ~= nil and (type(scope.retry_delay_ms) ~= "number" or scope.retry_delay_ms < 0) then
+		error(string.format("adapter scope '%s' field 'retry_delay_ms' must be a non-negative number", scope_name))
+	end
+
 	if #scope.documentation_rules == 0 then
 		error(string.format("adapter scope '%s' requires at least one documentation rule", scope_name))
 	end

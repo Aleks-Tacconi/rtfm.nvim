@@ -22,8 +22,11 @@ jobs:
       - name: Set up LuaRocks
         uses: leafo/gh-actions-luarocks@v4
 
-      - name: Install linters
-        run: luarocks install luacheck && luarocks install stylua
+      - name: Install luacheck
+        run: luarocks install luacheck
+
+      - name: Install stylua
+        run: cargo install stylua
 
       - name: Check formatting
         run: stylua --check .

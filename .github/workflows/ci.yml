@@ -32,4 +32,4 @@ jobs:
         run: stylua --check .
 
       - name: Run luacheck
-        run: luacheck .
+        run: luacheck lua plugin

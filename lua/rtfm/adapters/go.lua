@@ -3,8 +3,7 @@ local Rule = require("rtfm.abc-adapter.rule")
 
 local BUILTINS_URL = "https://docs-go.hexacode.org/pkg/builtin/"
 local STDLIB_URL = "https://docs-go.hexacode.org/pkg/"
-local DOC_SECTION_PATTERN =
-	[[<h2[^>]*id="[^"]\+"[^>]*>\_.\{-}\ze\(<h2[^>]*id="\|<div id="footer"\|Build version\)]]
+local DOC_SECTION_PATTERN = [[<h2[^>]*id="[^"]\+"[^>]*>\_.\{-}\ze\(<h2[^>]*id="\|<div id="footer"\|Build version\)]]
 
 --- Returns the stdlib output path without the upstream pkg/ prefix.
 --- @param ctx table
@@ -43,10 +42,7 @@ end
 
 local function is_public_stdlib_source(url)
 	local path = url:match("^https?://docs%-go%.hexacode%.org/pkg/(.+)/$") or ""
-	return path ~= ""
-		and path:match("^[a-z0-9_/-]+$")
-		and not path:match("^pkg/")
-		and not path:match("^builtin$")
+	return path ~= "" and path:match("^[a-z0-9_/-]+$") and not path:match("^pkg/") and not path:match("^builtin$")
 end
 
 return Adapter.define({

@@ -358,6 +358,14 @@ local function clear_overlay()
 	end
 end
 
+--- Returns whether the active window is showing the viewer buffer.
+--- @return boolean
+local function in_viewer_window()
+	return M.session
+		and vim.api.nvim_win_is_valid(0)
+		and vim.api.nvim_win_get_buf(0) == M.session.bufnr
+end
+
 --- Opens an ordered documentation viewer session.
 --- @param context table
 --- @param entries table[]
@@ -398,10 +406,22 @@ function M.open(context, entries, index)
 		end,
 	})
 
+	vim.api.nvim_create_autocmd({ "BufLeave", "WinLeave" }, {
+		group = M.augroup,
+		buffer = bufnr,
+		callback = function()
+			if not M.session or M.session.bufnr ~= bufnr then
+				return
+			end
+
+			clear_overlay()
+		end,
+	})
+
 	vim.api.nvim_create_autocmd({ "VimResized", "WinResized", "BufEnter", "WinEnter" }, {
 		group = M.augroup,
 		callback = function()
-			if not has_active_session() then
+			if not has_active_session() or not in_viewer_window() then
 				return
 			end
 

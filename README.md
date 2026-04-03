@@ -46,7 +46,7 @@ Generate and store local markdown docs for languages/frameworks via pluggable ad
 
 ```lua
 require("rtfm").setup({
-	ensure_installed = { "python" },
+	ensure_installed = { "python", "go" },
 	viewer = {
 		keymaps = {
 			prev = "[d",
@@ -91,6 +91,7 @@ Built-in adapters are defined in `lua/rtfm.lua`:
 
 ```lua
 	M.adapters = {
+	go = "rtfm.adapters.go",
 	python = "rtfm.adapters.python",
 }
 ```
@@ -128,22 +129,33 @@ return Adapter.define({
 
 ### Adapter Spec Fields
 
-- `doc`: output directory name (for example `python`)
-- `builtins` / `stdlib` / `misc`: optional crawler specs
+| Field | Required | Description |
+| --- | --- | --- |
+| `doc` | Yes | Output directory name, for example `python`. |
+| `builtins` / `stdlib` / `misc` | No | Optional crawler specs for each scope. |
 
 Crawler spec:
 
-- `url` (required): root docs URL
-- `seed_sources` (optional): additional full `https://...` source URLs to include
-- `source_rules` (optional): rule chain for extracting source URLs from `url` (if empty, discovery is skipped)
-- `documentation_rules` (required): rule chain for extracting doc sections
-- `name_rule` (required): rule that extracts the section name from each documentation fragment
+| Field | Required | Description |
+| --- | --- | --- |
+| `url` | Yes | Root docs URL used for discovery. |
+| `seed_sources` | No | Additional full `https://...` source URLs to include before discovery runs. |
+| `source_rules` | No | Rule chain for extracting source URLs from `url`. If empty, discovery is skipped. |
+| `documentation_rules` | Yes | Rule chain for extracting doc sections from each source page. |
+| `name_rule` | Yes | Rule that extracts the section name from each documentation fragment. |
 
-Useful rule helpers:
+Available rule helpers:
 
-- `Rule.tag("section")`: top-level matching tags
-- `Rule.deep_tag("section")`: nested matching tags as well
-- `Rule.heading_level(2)`: keep only fragments whose first heading is `h2`
+| Helper | What it matches | Example |
+| --- | --- | --- |
+| `Rule.tag("section")` | Top-level HTML elements by tag name. | `Rule.tag("section")` |
+| `Rule.deep_tag("section")` | HTML elements by tag name, including nested matches. | `Rule.deep_tag("section")` |
+| `Rule.selector(".py")` | Full HTML elements by `.class` or `#id` selector. | `Rule.selector(".py")`, `Rule.selector("#module-string")` |
+| `Rule.heading_level(2)` | Keeps only fragments whose first heading is `h2`. | `Rule.heading_level(2)` |
+| `Rule.regex([[...]])` | All matches for a Vim regex expression. Use this for link extraction or custom name parsing. | `Rule.regex([[<a href="\zs[^"]\+\ze"]])` |
+
+`Rule.regex(...)` uses Vim regex syntax, not Lua patterns.
+- `Rule.selector(".Documentation-content")`: match a full element by `.class` or `#id`
 
 Docs are always written as:
 
@@ -160,6 +172,7 @@ Examples:
 - `os.system` -> `os/system.md`
 - `os.PathLike.__fspath__` -> `os/PathLike__fspath__.md`
 - `os.stat_result.st_mode` -> `os/stat_result__st_mode.md`
+- `net/http` source docs stay nested, for example `go/stdlib/net/http/pkg-overview.md`
 
 Generated markdown is wrapped for terminal readability, and each scope root gets a numbered `_index.md` file that preserves extraction order.
 
@@ -169,6 +182,15 @@ Docs are written under `stdpath("data") .. "/rtfm/"`, typically:
 
 ```text
 <data>/rtfm/
+  go/
+	  builtin/
+		builtin/pkg-overview.md
+		builtin/pkg-functions.md
+		_index.md
+	  stdlib/
+		net/http/pkg-overview.md
+		fmt/pkg-functions.md
+		_index.md
   python/
 	  builtin/
 		introduction/introduction.md

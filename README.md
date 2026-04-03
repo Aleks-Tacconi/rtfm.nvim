@@ -154,8 +154,8 @@ Available rule helpers:
 | `Rule.heading_level(2)` | Keeps only fragments whose first heading is `h2`. | `Rule.heading_level(2)` |
 | `Rule.regex([[...]])` | All matches for a Vim regex expression. Use this for link extraction or custom name parsing. | `Rule.regex([[<a href="\zs[^"]\+\ze"]])` |
 
-`Rule.regex(...)` uses Vim regex syntax, not Lua patterns.
-- `Rule.selector(".Documentation-content")`: match a full element by `.class` or `#id`
+
+> `Rule.regex(...)` uses Vim regex syntax, not Lua patterns.
 
 Docs are always written as:
 

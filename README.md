@@ -91,6 +91,8 @@ In the age of AI it is easy to ask ChatGPT for documentation, but that often ski
 
 If the adapter you want is not built-in, you can create your own. See the [adapter guide](https://github.com/Aleks-Tacconi/rtfm.nvim/blob/main/ADAPTERS.md).
 
+Built-in adapters currently include `go`, `lua`, `pandas`, and `python`.
+
 ## Output Layout
 
 Docs are written under `stdpath("data") .. "/rtfm/"`, typically:
@@ -116,5 +118,8 @@ Docs are written under `stdpath("data") .. "/rtfm/"`, typically:
 	  stdlib/
 		os/system.md
 		_index.md
-	  misc/
+  pandas/
+	  pandas/dataframe/aggregate.md
+	  pandas/series/map.md
+	  _index.md
 ```

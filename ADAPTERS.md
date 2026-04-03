@@ -31,6 +31,7 @@ local Adapter = require("rtfm.abc-adapter.adapter")
 local Rule = require("rtfm.abc-adapter.rule")
 
 return Adapter.define({
+	kind = "language",
 	doc = "my_lang",
 	builtins = {
 		url = "https://example.com/docs/index.html",
@@ -52,8 +53,30 @@ return Adapter.define({
 
 | Field | Required | Description |
 | --- | --- | --- |
+| `kind` | Yes | Adapter category: `language` or `framework`. |
 | `doc` | Yes | Output directory name, for example `python`. |
-| `builtins` / `stdlib` / `misc` | No | Optional crawler specs for each scope. |
+| `builtins` / `stdlib` | No | Language-only crawler specs. At least one is required for `kind = "language"`. |
+| `api` | No | Framework-only crawler spec. Required for `kind = "framework"`. |
+
+Language adapters may define `builtins`, `stdlib`, or both. Framework adapters define only `api`.
+
+```lua
+return Adapter.define({
+	kind = "framework",
+	doc = "pandas",
+	api = {
+		url = "https://example.com/pandas/api/index.html",
+		source_rules = {
+			Rule.regex([[href="\zsapi/[^"]+\ze"]]),
+		},
+		documentation_rules = {
+			Rule.deep_tag("section"),
+			Rule.heading_level(2),
+		},
+		name_rule = Rule.regex([[<section id="\zs[^"]\+\ze"]]),
+	},
+})
+```
 
 
 ### Crawler Spec
@@ -74,7 +97,7 @@ return Adapter.define({
 
 `path_mapper(ctx)` receives `source_url`, `source_path`, `source_name`, `section_html`, `section_index`, `section_id`, `heading_text`, `section_name`, and `normalized_name`. Return a relative path like `fmt/Printf` or just `append`. Paths are sanitized before files are written.
 
-You can also use `path_mapper` to group docs for browsing, for example `functions/<name>` and `types/<name>`. `:RtfmBrowse` groups docs by the first path segment.
+You can also use `path_mapper` to group docs for browsing, for example `functions/<name>` and `types/<name>`. Framework adapters default to `doc/source/name`, so a pandas API page can become `pandas/dataframe/aggregate.md` without extra boilerplate.
 
 ```lua
 stdlib = {

@@ -119,7 +119,7 @@ end
 --- @return nil
 local function pick_scope(adapter_name, adapters)
 	local adapter = require(adapters[adapter_name]):new()
-	local scopes = Index.list_scopes(adapter, Adapter.SCOPES)
+	local scopes = Index.list_scopes(adapter, Adapter.scopes_for(adapter))
 	open_picker(string.format("RTFM Scopes: %s", adapter_name), scopes, "label", function(selection)
 		pick_source(adapter_name, selection)
 	end)

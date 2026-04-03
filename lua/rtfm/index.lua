@@ -9,6 +9,10 @@ local INDEX_LINE_PATTERN = "^(%d+)%. (.+) %- (.+)%.md$"
 --- @param scope_dir string
 --- @return string
 local function scope_path(adapter, scope_dir)
+	if scope_dir == "" then
+		return string.format("%s%s", utils.data_dir, adapter)
+	end
+
 	return string.format("%s%s/%s", utils.data_dir, adapter, scope_dir)
 end
 
@@ -25,6 +29,13 @@ local function parse_index_line(adapter, scope_dir, line, line_number)
 	end
 
 	local source = relative_path:match("^([^/]+)") or relative_path
+	if scope_dir == "api" then
+		local framework, section = relative_path:match("^([^/]+)/([^/]+)")
+		if framework and section then
+			source = string.format("%s/%s", framework, section)
+		end
+	end
+
 	return {
 		ordinal = tonumber(ordinal),
 		title = vim.trim(title),
@@ -59,7 +70,7 @@ function M.list_scopes(adapter, scopes)
 				dir = scope.dir,
 				method = scope.method,
 				spec_key = scope.spec_key,
-				label = scope.dir,
+				label = scope.label or scope.dir,
 			})
 		end
 	end

@@ -1,9 +1,8 @@
 local M = {}
 
-local SCOPES = {
-	"builtins",
-	"stdlib",
-	"misc",
+local VALID_KINDS = {
+	language = true,
+	framework = true,
 }
 
 local function validate_rules(scope_name, key, rules)
@@ -79,21 +78,51 @@ function M.validate(spec)
 		error("adapter spec must be a table")
 	end
 
+	if type(spec.kind) ~= "string" or spec.kind == "" then
+		error("adapter spec requires a non-empty 'kind'")
+	end
+
+	if not VALID_KINDS[spec.kind] then
+		error(string.format("adapter spec kind must be 'language' or 'framework', got '%s'", spec.kind))
+	end
+
 	if type(spec.doc) ~= "string" or spec.doc == "" then
 		error("adapter spec requires a non-empty 'doc'")
 	end
 
-	local has_scope = false
-	for _, scope_name in ipairs(SCOPES) do
-		if spec[scope_name] ~= nil then
-			has_scope = true
-			validate_scope(scope_name, spec[scope_name])
-		end
+	if spec.misc ~= nil then
+		error("adapter scope 'misc' was removed; use kind='framework' with an 'api' scope")
 	end
 
-	if not has_scope then
-		error("adapter spec requires at least one of: builtins, stdlib, misc")
+	if spec.kind == "language" then
+		if spec.api ~= nil then
+			error("language adapters cannot define an 'api' scope")
+		end
+
+		if spec.builtins == nil and spec.stdlib == nil then
+			error("language adapters require at least one of: builtins, stdlib")
+		end
+
+		if spec.builtins ~= nil then
+			validate_scope("builtins", spec.builtins)
+		end
+
+		if spec.stdlib ~= nil then
+			validate_scope("stdlib", spec.stdlib)
+		end
+
+		return true
 	end
+
+	if spec.builtins ~= nil or spec.stdlib ~= nil then
+		error("framework adapters can only define an 'api' scope")
+	end
+
+	if spec.api == nil then
+		error("framework adapters require an 'api' scope")
+	end
+
+	validate_scope("api", spec.api)
 
 	return true
 end

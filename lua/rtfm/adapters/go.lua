@@ -46,6 +46,7 @@ local function is_public_stdlib_source(url)
 end
 
 return Adapter.define({
+	kind = "language",
 	doc = "go",
 	builtins = {
 		url = BUILTINS_URL,

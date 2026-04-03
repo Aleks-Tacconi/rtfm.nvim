@@ -6,20 +6,46 @@ local utils = require("rtfm.utils")
 --- Abstract base adapter class, defines the interface for pulling doc specifications
 --- and storing them in language/option/(data_structure|type|function).md
 --- @field doc string: The language / framework the documentation being pulled from is for, used for display purposes
+--- @field kind string: Adapter category, either 'language' or 'framework'
 local M = {}
 
-M.SCOPES = {
-	{ spec_key = "builtins", method = "config_builtins", dir = "builtin" },
-	{ spec_key = "stdlib", method = "config_stdlib", dir = "stdlib" },
-	{ spec_key = "misc", method = "config_misc", dir = "misc" },
+local KIND_SCOPES = {
+	language = {
+		{ spec_key = "builtins", method = "config_builtins", dir = "builtin" },
+		{ spec_key = "stdlib", method = "config_stdlib", dir = "stdlib" },
+	},
+	framework = {
+		{ spec_key = "api", method = "config_api", dir = "", label = "api" },
+	},
 }
 
 --- Constructs a new adapter instance
 --- @param doc string: The language / framework the documentation being pulled from is for, used for display purposes
 function M:new(doc)
-	local instance = { doc = doc, abstract = false }
+	local instance = { doc = doc, kind = self.kind, abstract = false }
 	setmetatable(instance, { __index = self })
 	return instance
+end
+
+--- Returns the supported scopes for an adapter kind.
+--- @param kind string
+--- @return table[]
+function M.kind_scopes(kind)
+	return vim.deepcopy(KIND_SCOPES[kind] or {})
+end
+
+--- Returns the active scopes for an adapter instance or spec.
+--- @param adapter table
+--- @return table[]
+function M.scopes_for(adapter)
+	local scopes = {}
+	for _, scope in ipairs(M.kind_scopes(adapter.kind)) do
+		if adapter.spec[scope.spec_key] then
+			table.insert(scopes, scope)
+		end
+	end
+
+	return scopes
 end
 
 local function fail_with_cleanup(temp_path, err, done)
@@ -64,6 +90,18 @@ local function commit_scope(temp_path, target_path, done)
 	fail_with_cleanup(temp_path, rename_err, done)
 end
 
+--- Returns the output path for a scope directory.
+--- @param parent_path string
+--- @param scope_dir string
+--- @return string
+local function scope_target_path(parent_path, scope_dir)
+	if scope_dir == "" then
+		return parent_path
+	end
+
+	return parent_path .. "/" .. scope_dir
+end
+
 local function commit_scope_sync(temp_path, target_path)
 	local backup_path = target_path .. ".bak"
 	utils.safe_delete(backup_path)
@@ -94,7 +132,7 @@ end
 function M:_run_scope(scope_dir, crawler_spec, done)
 	local crawler = CrawlerConfig:new(crawler_spec)
 	local parent_path = utils.data_dir .. self.doc
-	local target_path = parent_path .. "/" .. scope_dir
+	local target_path = scope_target_path(parent_path, scope_dir)
 	local temp_path, temp_err = utils.make_temp_dir(parent_path, scope_dir)
 	if not temp_path then
 		done(false, temp_err)
@@ -127,7 +165,7 @@ function M:_run_scope_sync(scope_dir, crawler_spec, opts)
 	opts = opts or {}
 	local crawler = CrawlerConfig:new(crawler_spec)
 	local parent_path = utils.data_dir .. self.doc
-	local target_path = parent_path .. "/" .. scope_dir
+	local target_path = scope_target_path(parent_path, scope_dir)
 	local temp_path, temp_err = utils.make_temp_dir(parent_path, scope_dir)
 	if not temp_path then
 		error(temp_err)
@@ -167,20 +205,29 @@ function M:config_stdlib_sync(crawler_spec, opts)
 end
 
 --- @param crawler_spec table
-function M:config_misc(crawler_spec, done)
-	self:_run_scope("misc", crawler_spec, done)
+function M:config_api(crawler_spec, done)
+	self:_run_scope("api", crawler_spec, done)
 end
 
 --- @param crawler_spec table
-function M:config_misc_sync(crawler_spec, opts)
-	self:_run_scope_sync("misc", crawler_spec, opts)
+function M:config_api_sync(crawler_spec, opts)
+	self:_run_scope_sync("api", crawler_spec, opts)
 end
 
 --- @class AdapterSpec
+--- @field kind string
 --- @field doc string
 --- @field builtins table|nil
 --- @field stdlib table|nil
---- @field misc table|nil
+--- @field api table|nil
+
+--- Returns the default framework API output path.
+--- @param doc string
+--- @param ctx table
+--- @return string
+local function default_framework_api_path(doc, ctx)
+	return string.format("%s/%s/%s", doc, ctx.source_name:gsub("%.", "/"), ctx.normalized_name)
+end
 
 --- Defines a declarative adapter with preconfigured crawler specs.
 --- @param spec AdapterSpec
@@ -189,16 +236,23 @@ function M.define(spec)
 	Contract.validate(spec)
 
 	local adapter = {
+		kind = spec.kind,
 		doc = spec.doc,
 		spec = spec,
 	}
 	setmetatable(adapter, { __index = M })
 
+	if spec.kind == "framework" and spec.api.path_mapper == nil then
+		spec.api.path_mapper = function(ctx)
+			return default_framework_api_path(spec.doc, ctx)
+		end
+	end
+
 	function adapter:new()
 		return M.new(self, self.doc)
 	end
 
-	for _, scope in ipairs(M.SCOPES) do
+	for _, scope in ipairs(M.kind_scopes(spec.kind)) do
 		if spec[scope.spec_key] then
 			local scope_key = scope.spec_key
 			local scope_dir = scope.dir

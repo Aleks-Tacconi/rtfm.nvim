@@ -3,10 +3,13 @@ local Rule = require("rtfm.abc-adapter.rule")
 
 local MANUAL_URL = "https://www.lua.org/manual/5.4/manual.html"
 local BUILTIN_SECTION_PATTERN = [[<h2>6\.1\_.\{-}</h2>\_.\{-}\ze<h2>6\.2]]
-local ENTRY_PATTERN =
-	[[<hr><h3><a name="pdf-[^"]\+"><code>[^<]\+</code></a></h3>\_.\{-}\ze\(<hr><h3><a name="pdf-\|<h[23]>[0-9]\|</body>\|\%$\)]]
-local STDLIB_ENTRY_PATTERN =
-	[[<hr><h3><a name="pdf-\%(require\|coroutine\.[^"]\+\|package\.[^"]\+\|string\.[^"]\+\|utf8\.[^"]\+\|table\.[^"]\+\|math\.[^"]\+\|io\.[^"]\+\|os\.[^"]\+\|debug\.[^"]\+\|file:[^"]\+\)"><code>[^<]\+</code></a></h3>\_.\{-}\ze\(<hr><h3><a name="pdf-\|<h[23]>[0-9]\|</body>\|\%$\)]]
+local ENTRY_PATTERN = [[<hr><h3><a name="pdf-[^"]\+"><code>[^<]\+</code></a></h3>
+\_.\{-}\ze\(<hr><h3><a name="pdf-\|<h[23]>[0-9]\|</body>\|\%$\)]]
+local STDLIB_ENTRY_PATTERN = [[<hr><h3><a name="pdf-
+\%(require\|coroutine\.[^"]\+\|package\.[^"]\+\|string\.[^"]\+\|utf8\.[^"]\+
+\|table\.[^"]\+\|math\.[^"]\+\|io\.[^"]\+\|os\.[^"]\+\|debug\.[^"]\+
+\|file:[^"]\+\)"><code>[^<]\+</code></a></h3>
+\_.\{-}\ze\(<hr><h3><a name="pdf-\|<h[23]>[0-9]\|</body>\|\%$\)]]
 
 --- Returns the builtin output path grouped under globals.
 --- @param ctx table
@@ -34,10 +37,11 @@ local function stdlib_path(ctx)
 		return string.format("%s/%s", library, item)
 	end
 
-	return string.format("misc/%s", ctx.normalized_name)
+	return string.format("other/%s", ctx.normalized_name)
 end
 
 return Adapter.define({
+	kind = "language",
 	doc = "lua",
 	builtins = {
 		url = MANUAL_URL,

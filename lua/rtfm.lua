@@ -10,6 +10,7 @@ local M = {}
 M.adapters = {
 	go = "rtfm.adapters.go",
 	lua = "rtfm.adapters.lua",
+	pandas = "rtfm.adapters.pandas",
 	python = "rtfm.adapters.python",
 }
 
@@ -44,21 +45,20 @@ local function notify(message, level, should_notify, opts)
 end
 
 local function scope_lock_key(adapter, scope)
-	return string.format("%s:%s", adapter.doc, scope.dir)
+	local key = scope.dir ~= "" and scope.dir or scope.spec_key
+	return string.format("%s:%s", adapter.doc, key)
 end
 
 local function acquire_scope_locks(adapter)
 	local keys = {}
 
-	for _, scope in ipairs(Adapter.SCOPES) do
-		if adapter.spec[scope.spec_key] then
-			local key = scope_lock_key(adapter, scope)
-			if M._active_installs[key] then
-				return nil, string.format("Install already running for '%s' %s", adapter.doc, scope.dir)
-			end
-
-			table.insert(keys, key)
+	for _, scope in ipairs(Adapter.scopes_for(adapter)) do
+		local key = scope_lock_key(adapter, scope)
+		if M._active_installs[key] then
+			return nil, string.format("Install already running for '%s' %s", adapter.doc, scope.label or scope.dir)
 		end
+
+		table.insert(keys, key)
 	end
 
 	for _, key in ipairs(keys) do
@@ -75,13 +75,7 @@ local function release_scope_locks(keys)
 end
 
 local function enabled_scopes(adapter)
-	local scopes = {}
-	for _, scope in ipairs(Adapter.SCOPES) do
-		if adapter.spec[scope.spec_key] then
-			table.insert(scopes, scope)
-		end
-	end
-	return scopes
+	return Adapter.scopes_for(adapter)
 end
 
 local function run_scopes_sync(adapter, scopes, on_scope, on_source)
@@ -111,7 +105,7 @@ local function run_scopes(adapter, scopes, opts, done)
 		end
 
 		notify(
-			string.format("Installing '%s' %s (%d/%d)", adapter.doc, scope.dir, index, #scopes),
+			string.format("Installing '%s' %s (%d/%d)", adapter.doc, scope.label or scope.dir, index, #scopes),
 			vim.log.levels.INFO,
 			opts.notify
 		)
@@ -137,6 +131,7 @@ local function progress_lines(_, scopes, active_index, active_status, detail)
 	local lines = {}
 
 	for index, scope in ipairs(scopes) do
+		local label = scope.label or scope.dir
 		local icon = "󰄱"
 		local status = "pending"
 		if index < active_index then
@@ -147,7 +142,7 @@ local function progress_lines(_, scopes, active_index, active_status, detail)
 			status = active_status
 		end
 
-		table.insert(lines, string.format(" %s  %-8s  %s", icon, status, scope.dir))
+		table.insert(lines, string.format(" %s  %-8s  %s", icon, status, label))
 	end
 
 	if detail and detail ~= "" then
@@ -175,7 +170,7 @@ local function install_adapter_modal(name)
 			detail = nil
 			Progress.set_lines(progress_lines(name, scopes, index, "running", detail))
 		end, function(_, index, _, source, source_index, source_total)
-			detail = string.format("package %d/%d  %s", source_index, source_total, source)
+			detail = string.format("source %d/%d  %s", source_index, source_total, source)
 			Progress.set_lines(progress_lines(name, scopes, index, "running", detail))
 		end)
 	end, debug.traceback)

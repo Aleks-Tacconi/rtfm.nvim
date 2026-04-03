@@ -31,12 +31,11 @@ local function is_installed(name, module_path)
 		return false
 	end
 
-	for _, scope in ipairs(Adapter.SCOPES) do
-		if adapter.spec[scope.spec_key] then
-			local index_path = string.format("%s%s/%s/_index.md", utils.data_dir, name, scope.dir)
-			if vim.fn.filereadable(index_path) == 1 then
-				return true
-			end
+	for _, scope in ipairs(Adapter.scopes_for(adapter)) do
+		local index_path = scope.dir == "" and string.format("%s%s/_index.md", utils.data_dir, name)
+			or string.format("%s%s/%s/_index.md", utils.data_dir, name, scope.dir)
+		if vim.fn.filereadable(index_path) == 1 then
+			return true
 		end
 	end
 

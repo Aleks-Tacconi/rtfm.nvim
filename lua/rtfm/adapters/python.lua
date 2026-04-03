@@ -5,6 +5,7 @@ local ROOT_URL = "https://docs.python.org/3/reference/index.html"
 local STDLIB_URL = "https://docs.python.org/3/library/index.html"
 
 return Adapter.define({
+	kind = "language",
 	doc = "python",
 	builtins = {
 		url = ROOT_URL,

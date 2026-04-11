@@ -3,9 +3,9 @@ local Config = require("rtfm.core.config")
 local Install = require("rtfm.core.install")
 local Registry = require("rtfm.core.registry")
 local utils = require("rtfm.utils")
-local Browser = require("rtfm.browser")
-local Manage = require("rtfm.manage")
-local Viewer = require("rtfm.viewer")
+local Browser = require("rtfm.ui.browser")
+local Manage = require("rtfm.ui.manage")
+local Viewer = require("rtfm.ui.viewer")
 
 local M = {}
 

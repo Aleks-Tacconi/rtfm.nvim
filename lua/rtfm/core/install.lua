@@ -1,5 +1,5 @@
 local Adapter = require("rtfm.adapters.base.adapter")
-local Progress = require("rtfm.progress")
+local Progress = require("rtfm.ui.progress")
 local utils = require("rtfm.utils")
 
 local ScopeLock = require("rtfm.core.scope_lock")

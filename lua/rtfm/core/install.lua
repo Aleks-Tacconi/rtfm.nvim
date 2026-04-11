@@ -1,4 +1,4 @@
-local Adapter = require("rtfm.abc-adapter.adapter")
+local Adapter = require("rtfm.adapters.base.adapter")
 local Progress = require("rtfm.progress")
 local utils = require("rtfm.utils")
 

@@ -27,8 +27,8 @@ If you build a generally useful adapter, feel free to open a merge request and c
 Create a file like `lua/rtfm/adapters/my_lang.lua` and return `Adapter.define(...)`.
 
 ```lua
-local Adapter = require("rtfm.abc-adapter.adapter")
-local Rule = require("rtfm.abc-adapter.rule")
+local Adapter = require("rtfm.adapters.base.adapter")
+local Rule = require("rtfm.adapters.base.rule")
 
 return Adapter.define({
 	kind = "language",

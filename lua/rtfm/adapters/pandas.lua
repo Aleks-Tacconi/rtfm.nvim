@@ -1,5 +1,5 @@
-local Adapter = require("rtfm.abc-adapter.adapter")
-local Rule = require("rtfm.abc-adapter.rule")
+local Adapter = require("rtfm.adapters.base.adapter")
+local Rule = require("rtfm.adapters.base.rule")
 
 local API_URL = "https://pandas.pydata.org/docs/reference/index.html"
 local API_SEED_SOURCES = {

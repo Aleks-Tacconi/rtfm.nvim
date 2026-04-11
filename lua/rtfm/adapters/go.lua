@@ -1,5 +1,5 @@
-local Adapter = require("rtfm.abc-adapter.adapter")
-local Rule = require("rtfm.abc-adapter.rule")
+local Adapter = require("rtfm.adapters.base.adapter")
+local Rule = require("rtfm.adapters.base.rule")
 
 local BUILTINS_URL = "https://docs-go.hexacode.org/pkg/builtin/"
 local STDLIB_URL = "https://docs-go.hexacode.org/pkg/"

@@ -1,5 +1,5 @@
-local Adapter = require("rtfm.abc-adapter.adapter")
-local Rule = require("rtfm.abc-adapter.rule")
+local Adapter = require("rtfm.adapters.base.adapter")
+local Rule = require("rtfm.adapters.base.rule")
 
 local MANUAL_URL = "https://www.lua.org/manual/5.4/manual.html"
 local BUILTIN_SECTION_PATTERN = [[<h2>6\.1\_.\{-}</h2>\_.\{-}\ze<h2>6\.2]]

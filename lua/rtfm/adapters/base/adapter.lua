@@ -1,4 +1,4 @@
-local CrawlerConfig = require("rtfm.adapters.base.crawler_config")
+local CrawlerConfig = require("rtfm.adapters.base.crawler")
 local Contract = require("rtfm.adapters.base.contract")
 local utils = require("rtfm.utils")
 
